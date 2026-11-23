@@ -1,20 +1,22 @@
-# Everything Claude Code
+# LEGENDS
 
-[![Stars](https://img.shields.io/github/stars/affaan-m/everything-claude-code?style=flat)](https://github.com/affaan-m/everything-claude-code/stargazers)
+[![Stars](https://img.shields.io/github/stars/TahaGPT/legends?style=flat)](https://github.com/TahaGPT/legends/stargazers)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Shell](https://img.shields.io/badge/-Shell-4EAA25?logo=gnu-bash&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/-TypeScript-3178C6?logo=typescript&logoColor=white)
 ![Markdown](https://img.shields.io/badge/-Markdown-000000?logo=markdown&logoColor=white)
 
-**The complete collection of Claude Code configs from an Anthropic hackathon winner.**
+**An end-to-end Claude Code toolkit: from idea to reviewed PR to release.**
 
-Production-ready agents, skills, hooks, commands, rules, and MCP configurations evolved over 10+ months of intensive daily use building real products.
+Agents, skills, commands, hooks, and rules that plan, design, implement test-first, review, verify, document, deploy, and release, for any project. TypeScript/JavaScript and Rust are supported out of the box, and every agent takes its conventions from your project's `CLAUDE.md` and CI.
+
+> Built on [everything-claude-code](https://github.com/affaan-m/everything-claude-code) by Affaan Mustafa (MIT). See [Credits](#credits).
 
 ---
 
 ## The Guides
 
-This repo is the raw code only. The guides explain everything.
+The original author's guides explain the foundations this toolkit builds on (setup, token optimization, memory, evals, parallelization).
 
 <table>
 <tr>
@@ -86,7 +88,7 @@ Or use the `/setup-pm` command in Claude Code.
 This repo is a **Claude Code plugin** - install it directly or copy components manually.
 
 ```
-everything-claude-code/
+legends/
 |-- .claude-plugin/   # Plugin and marketplace manifests
 |   |-- plugin.json         # Plugin metadata and component paths
 |   |-- marketplace.json    # Marketplace catalog for /plugin marketplace add
@@ -98,7 +100,14 @@ everything-claude-code/
 |   |-- code-reviewer.md     # Quality and security review
 |   |-- security-reviewer.md # Vulnerability analysis
 |   |-- build-error-resolver.md
+|   |-- rust-build-resolver.md
+|   |-- explorer.md
 |   |-- e2e-runner.md        # Playwright E2E testing
+|   |-- implementer.md       # Executes approved plans test-first
+|   |-- database-architect.md # Schema design, safe migrations, indexing
+|   |-- api-designer.md      # Contract-first API and interface design
+|   |-- devops.md            # CI/CD, Docker, env config, deployments
+|   |-- release-manager.md   # Versioning, changelog, tags, releases
 |   |-- refactor-cleaner.md  # Dead code cleanup
 |   |-- doc-updater.md       # Documentation sync
 |
@@ -109,6 +118,7 @@ everything-claude-code/
 |   |-- continuous-learning/        # Auto-extract patterns from sessions (Longform Guide)
 |   |-- strategic-compact/          # Manual compaction suggestions (Longform Guide)
 |   |-- tdd-workflow/               # TDD methodology
+|   |-- rust-patterns/              # Rust idioms, async, testing, security
 |   |-- security-review/            # Security checklist
 |   |-- eval-harness/               # Verification loop evaluation (Longform Guide)
 |   |-- verification-loop/          # Continuous verification (Longform Guide)
@@ -119,6 +129,8 @@ everything-claude-code/
 |   |-- e2e.md              # /e2e - E2E test generation
 |   |-- code-review.md      # /code-review - Quality review
 |   |-- build-fix.md        # /build-fix - Fix build errors
+|   |-- ship.md             # /ship - Idea to reviewed PR, end to end
+|   |-- release.md          # /release - Cut a versioned release
 |   |-- refactor-clean.md   # /refactor-clean - Dead code removal
 |   |-- learn.md            # /learn - Extract patterns mid-session (Longform Guide)
 |   |-- checkpoint.md       # /checkpoint - Save verification state (Longform Guide)
@@ -180,10 +192,10 @@ The easiest way to use this repo - install as a Claude Code plugin:
 
 ```bash
 # Add this repo as a marketplace
-/plugin marketplace add affaan-m/everything-claude-code
+/plugin marketplace add TahaGPT/legends
 
 # Install the plugin
-/plugin install everything-claude-code@everything-claude-code
+/plugin install legends@legends
 ```
 
 Or add directly to your `~/.claude/settings.json`:
@@ -191,15 +203,15 @@ Or add directly to your `~/.claude/settings.json`:
 ```json
 {
   "extraKnownMarketplaces": {
-    "everything-claude-code": {
+    "legends": {
       "source": {
         "source": "github",
-        "repo": "affaan-m/everything-claude-code"
+        "repo": "TahaGPT/legends"
       }
     }
   },
   "enabledPlugins": {
-    "everything-claude-code@everything-claude-code": true
+    "legends@legends": true
   }
 }
 ```
@@ -214,19 +226,19 @@ If you prefer manual control over what's installed:
 
 ```bash
 # Clone the repo
-git clone https://github.com/affaan-m/everything-claude-code.git
+git clone https://github.com/TahaGPT/legends.git
 
 # Copy agents to your Claude config
-cp everything-claude-code/agents/*.md ~/.claude/agents/
+cp legends/agents/*.md ~/.claude/agents/
 
 # Copy rules
-cp everything-claude-code/rules/*.md ~/.claude/rules/
+cp legends/rules/*.md ~/.claude/rules/
 
 # Copy commands
-cp everything-claude-code/commands/*.md ~/.claude/commands/
+cp legends/commands/*.md ~/.claude/commands/
 
 # Copy skills
-cp -r everything-claude-code/skills/* ~/.claude/skills/
+cp -r legends/skills/* ~/.claude/skills/
 ```
 
 #### Add hooks to settings.json
@@ -238,6 +250,70 @@ Copy the hooks from `hooks/hooks.json` to your `~/.claude/settings.json`.
 Copy desired MCP servers from `mcp-configs/mcp-servers.json` to your `~/.claude.json`.
 
 **Important:** Replace `YOUR_*_HERE` placeholders with your actual API keys.
+
+---
+
+## Workflows
+
+### Ship a feature end to end
+
+```
+/ship "<feature description>"
+```
+spec → explore → design (architect / database-architect / api-designer, as needed) → plan (**you approve**) → implement test-first → code + security review → fix loop → E2E → verify → docs + CI/infra → commit → PR (**you approve**)
+
+### Cut a release
+
+```
+/release --dry-run   # preview version + changelog, change nothing
+/release             # bump, changelog, verify, tag locally; you approve push/publish
+```
+
+### Step by step
+
+```
+/plan          # plan the implementation, wait for approval
+/tdd           # tests first, then code
+/verify        # build, types, lint, tests, security scan
+/code-review   # self-review before the PR
+/checkpoint    # save progress state
+```
+
+### Other commands
+
+```
+/build-fix       # fix build errors (TS/JS, or cargo via rust-build-resolver)
+/refactor-clean  # find and remove dead code safely
+/e2e             # generate and run Playwright journeys
+/orchestrate     # run a custom sequence of agents
+/learn           # extract reusable patterns from the session
+```
+
+### Which agent for which job
+
+| Situation | Agent / Command |
+|-----------|-----------------|
+| Feature from idea to PR | `/ship` |
+| Understanding unfamiliar code, starting a bug fix | `explorer` |
+| Planning a feature | `/plan` → `planner` |
+| System design decisions | `architect` |
+| Schema changes, migrations, slow queries | `database-architect` |
+| New or changed endpoints, RPCs, events, public interfaces | `api-designer` |
+| Implementing an approved plan | `implementer` |
+| Writing tests first | `/tdd` → `tdd-guide` |
+| TS/JS build errors | `/build-fix` → `build-error-resolver` |
+| Rust build, clippy, test failures | `/build-fix` → `rust-build-resolver` |
+| Pre-PR quality check | `/code-review` → `code-reviewer` |
+| Auth, input handling, secrets, payments, LLM data | `security-reviewer` |
+| Critical user flows | `/e2e` → `e2e-runner` |
+| Dead code cleanup | `/refactor-clean` → `refactor-cleaner` |
+| Docs and codemaps | `doc-updater` |
+| CI, Docker, env config, deployments | `devops` |
+| Versioning, changelog, tags, releases | `/release` → `release-manager` |
+
+### Language support
+
+The agents detect the stack from the project's manifests. TypeScript/JavaScript is covered by the original skills. Rust is covered by the `rust-patterns` skill and the `rust-build-resolver` agent: `/verify`, `/build-fix`, and `verification-loop` switch to cargo commands when a `Cargo.toml` is present. Project conventions in your `CLAUDE.md` and CI config always take precedence over the defaults in this collection.
 
 ---
 
@@ -329,19 +405,19 @@ Please contribute! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ### Ideas for Contributions
 
-- Language-specific skills (Python, Go, Rust patterns)
+- Language-specific skills (Python, Go)
 - Framework-specific configs (Django, Rails, Laravel)
-- DevOps agents (Kubernetes, Terraform, AWS)
+- Cloud-specific DevOps guidance (Kubernetes, Terraform, AWS)
 - Testing strategies (different frameworks)
 - Domain-specific knowledge (ML, data engineering, mobile)
 
 ---
 
-## Background
+## Credits
 
-I've been using Claude Code since the experimental rollout. Won the Anthropic x Forum Ventures hackathon in Sep 2025 building [zenith.chat](https://zenith.chat) with [@DRodriguezFX](https://x.com/DRodriguezFX) - entirely using Claude Code.
+LEGENDS is a fork of [everything-claude-code](https://github.com/affaan-m/everything-claude-code) by [Affaan Mustafa](https://x.com/affaanmustafa), released under the MIT License. The original agents, skills, hooks, rules, and guides come from that project.
 
-These configs are battle-tested across multiple production applications.
+LEGENDS adds the end-to-end pipeline (`/ship`, `/release`), the `explorer`, `implementer`, `database-architect`, `api-designer`, `devops`, `release-manager`, and `rust-build-resolver` agents, the `rust-patterns` skill, and project-agnostic versions of the original agents.
 
 ---
 
@@ -360,7 +436,7 @@ Use `disabledMcpServers` in project config to disable unused ones.
 
 ### Customization
 
-These configs work for my workflow. You should:
+These configs are defaults. You should:
 1. Start with what resonates
 2. Modify for your stack
 3. Remove what you don't use
@@ -370,22 +446,22 @@ These configs work for my workflow. You should:
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=affaan-m/everything-claude-code&type=Date)](https://star-history.com/#affaan-m/everything-claude-code&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=TahaGPT/legends&type=Date)](https://star-history.com/#TahaGPT/legends&Date)
 
 ---
 
 ## Links
 
+- **Repository:** [TahaGPT/legends](https://github.com/TahaGPT/legends)
+- **Original project:** [affaan-m/everything-claude-code](https://github.com/affaan-m/everything-claude-code)
 - **Shorthand Guide (Start Here):** [The Shorthand Guide to Everything Claude Code](https://x.com/affaanmustafa/status/2012378465664745795)
 - **Longform Guide (Advanced):** [The Longform Guide to Everything Claude Code](https://x.com/affaanmustafa/status/2014040193557471352)
-- **Follow:** [@affaanmustafa](https://x.com/affaanmustafa)
-- **zenith.chat:** [zenith.chat](https://zenith.chat)
 
 ---
 
 ## License
 
-MIT - Use freely, modify as needed, contribute back if you can.
+MIT. See [LICENSE](LICENSE). Use freely, modify as needed, contribute back if you can.
 
 ---
 

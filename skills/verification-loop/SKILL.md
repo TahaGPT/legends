@@ -1,3 +1,8 @@
+---
+name: verification-loop
+description: Use after completing a feature or significant change, after refactoring, or before opening a PR. Runs build, type check, lint, tests, security scan and diff review as quality gates and reports PASS/FAIL per phase.
+---
+
 # Verification Loop Skill
 
 A comprehensive verification system for Claude Code sessions.
@@ -11,6 +16,13 @@ Invoke this skill:
 - After refactoring
 
 ## Verification Phases
+
+> **Rust projects (a `Cargo.toml` exists):** run each phase with cargo instead of npm.
+> Build + types: `cargo check --workspace --all-targets --all-features`.
+> Lint: `cargo fmt --all -- --check` and `cargo clippy --workspace --all-targets --all-features -- -D warnings`.
+> Tests: `cargo test --workspace` (or `cargo nextest run --workspace` + `cargo test --doc`), coverage via `cargo llvm-cov --summary-only`.
+> Security: `cargo audit`, `cargo deny check` if configured, and grep for `println!`/`dbg!`/`todo!` and new `.unwrap()` in non-test code.
+> See the `rust-patterns` skill for details. If a phase fails, hand off to the `rust-build-resolver` agent.
 
 ### Phase 1: Build Verification
 ```bash
