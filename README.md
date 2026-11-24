@@ -1,6 +1,7 @@
 # LEGENDS
 
 [![Stars](https://img.shields.io/github/stars/TahaGPT/legends?style=flat)](https://github.com/TahaGPT/legends/stargazers)
+[![Tests](https://github.com/TahaGPT/legends/actions/workflows/test.yml/badge.svg)](https://github.com/TahaGPT/legends/actions/workflows/test.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Shell](https://img.shields.io/badge/-Shell-4EAA25?logo=gnu-bash&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/-TypeScript-3178C6?logo=typescript&logoColor=white)
@@ -410,6 +411,8 @@ node tests/plugin/structure.test.js
 ```
 
 `tests/plugin/structure.test.js` validates the plugin itself: frontmatter on every agent, skill, and command; valid tool and model names; reviewer agents staying read-only; every agent and skill referenced by a command existing; manifests; and hook script paths. Run it after adding or renaming any agent, skill, or command.
+
+CI (`.github/workflows/test.yml`) runs the structure checks and then the full suite on every pull request and push to `main`, on Linux, macOS, and Windows (Node 22, plus Node 20 on Linux). The suite needs no `npm install`; it uses only Node's built-in modules.
 
 ---
 
