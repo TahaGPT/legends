@@ -65,9 +65,7 @@ function runScript(scriptPath, input = '', env = {}) {
 
 // Create a temporary test directory
 function createTestDir() {
-  const testDir = path.join(os.tmpdir(), `hooks-test-${Date.now()}`);
-  fs.mkdirSync(testDir, { recursive: true });
-  return testDir;
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'hooks-test-'));
 }
 
 // Clean up test directory
@@ -84,110 +82,173 @@ async function runTests() {
 
   const scriptsDir = path.join(__dirname, '..', '..', 'scripts', 'hooks');
 
-  // session-start.js tests
-  console.log('session-start.js:');
-
-  if (await asyncTest('runs without error', async () => {
-    const result = await runScript(path.join(scriptsDir, 'session-start.js'));
-    assert.strictEqual(result.code, 0, `Exit code should be 0, got ${result.code}`);
-  })) passed++; else failed++;
-
-  if (await asyncTest('outputs session info to stderr', async () => {
-    const result = await runScript(path.join(scriptsDir, 'session-start.js'));
-    assert.ok(
-      result.stderr.includes('[SessionStart]') ||
-      result.stderr.includes('Package manager'),
-      'Should output session info'
-    );
-  })) passed++; else failed++;
+  // All session hooks run against a temporary CLAUDE_CONFIG_DIR so the suite
+  // never touches the real ~/.claude.
+  const configDir = createTestDir();
+  const projectDir = createTestDir();
+  const env = { CLAUDE_CONFIG_DIR: configDir };
+  const sessionsDir = path.join(configDir, 'sessions');
+  const transcriptOf = (prompts) => {
+    const file = path.join(projectDir, `transcript-${Date.now()}-${Math.random()}.jsonl`);
+    const lines = [];
+    prompts.forEach((p, i) => {
+      lines.push(JSON.stringify({ type: 'user', message: { role: 'user', content: p } }));
+      lines.push(JSON.stringify({ type: 'assistant', message: { role: 'assistant', content: [{ type: 'text', text: `ok ${i}` }] } }));
+      lines.push(JSON.stringify({ type: 'user', message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: 't', content: 'out' }] } }));
+    });
+    lines.push(JSON.stringify({ type: 'user', message: { role: 'user', content: '<command-name>/model</command-name>' } }));
+    lines.push(JSON.stringify({ type: 'user', isMeta: true, message: { role: 'user', content: 'meta' } }));
+    fs.writeFileSync(file, lines.join('\n') + '\n');
+    return file;
+  };
+  const endSession = (sessionId, prompts, extra = {}) => runScript(
+    path.join(scriptsDir, 'session-end.js'),
+    JSON.stringify({ session_id: sessionId, transcript_path: transcriptOf(prompts), cwd: projectDir, hook_event_name: 'SessionEnd', reason: 'prompt_input_exit', ...extra }),
+    env
+  );
+  const startSession = (sessionId, extra = {}) => runScript(
+    path.join(scriptsDir, 'session-start.js'),
+    JSON.stringify({ session_id: sessionId, cwd: projectDir, hook_event_name: 'SessionStart', source: 'startup', ...extra }),
+    env
+  );
 
   // session-end.js tests
-  console.log('\nsession-end.js:');
+  console.log('session-end.js:');
 
-  if (await asyncTest('runs without error', async () => {
-    const result = await runScript(path.join(scriptsDir, 'session-end.js'));
+  if (await asyncTest('runs without error on empty stdin', async () => {
+    const result = await runScript(path.join(scriptsDir, 'session-end.js'), '', env);
     assert.strictEqual(result.code, 0, `Exit code should be 0, got ${result.code}`);
+    assert.strictEqual(result.stdout, '', 'SessionEnd output is never shown to Claude, so stdout stays empty');
   })) passed++; else failed++;
 
-  if (await asyncTest('creates or updates session file', async () => {
-    // Run the script
-    await runScript(path.join(scriptsDir, 'session-end.js'));
+  if (await asyncTest('writes a record with project, real prompt count and last request', async () => {
+    const result = await endSession('aaaa1111-test', ['first task', 'second task', 'fix the login bug']);
+    assert.strictEqual(result.code, 0);
+    const file = fs.readdirSync(sessionsDir).find(f => f.endsWith('-aaaa1111.tmp'));
+    assert.ok(file, 'record named <date>-<id8>.tmp should exist');
+    const content = fs.readFileSync(path.join(sessionsDir, file), 'utf8');
+    assert.ok(content.includes(`**Project:** ${projectDir}`), 'records the project path');
+    assert.ok(content.includes('**User messages:** 3'), 'counts only real prompts (no tool results, commands or meta)');
+    assert.ok(content.includes('**Last request:** fix the login bug'));
+    assert.ok(!content.includes('Learning review'), 'short session gets no learning hint');
+  })) passed++; else failed++;
 
-    // Check if session file was created
-    const sessionsDir = path.join(os.homedir(), '.claude', 'sessions');
-    const today = new Date().toISOString().split('T')[0];
-    const sessionFile = path.join(sessionsDir, `${today}-session.tmp`);
+  if (await asyncTest('keeps hand-written notes when the record is updated', async () => {
+    const file = path.join(sessionsDir, fs.readdirSync(sessionsDir).find(f => f.endsWith('-aaaa1111.tmp')));
+    fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replace(/- \(add notes here[^\n]*/, '- remember to rotate the API key'));
+    await endSession('aaaa1111-test', ['one more']);
+    const content = fs.readFileSync(file, 'utf8');
+    assert.ok(content.includes('remember to rotate the API key'), 'notes preserved');
+    assert.ok(content.includes('**User messages:** 1'), 'auto fields refreshed');
+  })) passed++; else failed++;
 
-    assert.ok(fs.existsSync(sessionFile), 'Session file should exist');
+  if (await asyncTest('long sessions get a learning-review suggestion', async () => {
+    await endSession('bbbb2222-test', Array.from({ length: 12 }, (_, i) => `task ${i}`));
+    const file = fs.readdirSync(sessionsDir).find(f => f.endsWith('-bbbb2222.tmp'));
+    const content = fs.readFileSync(path.join(sessionsDir, file), 'utf8');
+    assert.ok(content.includes('**Learning review:** suggested'));
+  })) passed++; else failed++;
+
+  if (await asyncTest('lists uncommitted files with their full names', async () => {
+    const repo = createTestDir();
+    const { execFileSync } = require('child_process');
+    const g = (...a) => execFileSync('git', a, { cwd: repo, stdio: 'ignore' });
+    g('init', '-q'); g('config', 'user.email', 't@example.com'); g('config', 'user.name', 't');
+    fs.writeFileSync(path.join(repo, 'README.md'), 'a'); g('add', '.'); g('commit', '-qm', 'init');
+    fs.writeFileSync(path.join(repo, 'README.md'), 'b'); fs.writeFileSync(path.join(repo, 'new.txt'), 'n');
+    await runScript(path.join(scriptsDir, 'session-end.js'), JSON.stringify({ session_id: 'gggg7777', cwd: repo }), env);
+    const content = fs.readFileSync(path.join(sessionsDir, fs.readdirSync(sessionsDir).find(f => f.endsWith('-gggg7777.tmp'))), 'utf8');
+    assert.ok(content.includes('- README.md'), content);
+    assert.ok(content.includes('- new.txt'), content);
+    cleanupTestDir(repo);
+  })) passed++; else failed++;
+
+  // session-start.js tests
+  console.log('\nsession-start.js:');
+
+  if (await asyncTest('prints the previous session for this project to stdout (Claude context)', async () => {
+    const result = await startSession('cccc3333-test');
+    assert.strictEqual(result.code, 0);
+    assert.ok(result.stdout.includes('[LEGENDS] Previous session in this project'), result.stdout);
+    assert.ok(result.stdout.includes('consider /learn'), 'surfaces the learning suggestion from bbbb2222');
+  })) passed++; else failed++;
+
+  if (await asyncTest('does not show the current session as "previous" (resume)', async () => {
+    // Make aaaa1111 the newest record, then start as that same session.
+    const file = path.join(sessionsDir, fs.readdirSync(sessionsDir).find(f => f.endsWith('-aaaa1111.tmp')));
+    const now = new Date();
+    fs.utimesSync(file, now, new Date(now.getTime() + 60000));
+    const result = await startSession('aaaa1111-test', { source: 'resume' });
+    assert.ok(!result.stdout.includes('rotate the API key'), 'own record excluded');
+    assert.ok(result.stdout.includes('Previous session'), 'falls back to the other record');
+  })) passed++; else failed++;
+
+  if (await asyncTest('shows notes from the previous record', async () => {
+    const result = await startSession('dddd4444-test');
+    assert.ok(result.stdout.includes('Notes: - remember to rotate the API key'), result.stdout);
+  })) passed++; else failed++;
+
+  if (await asyncTest('ignores records from other projects', async () => {
+    const other = createTestDir();
+    const result = await runScript(path.join(scriptsDir, 'session-start.js'), JSON.stringify({ session_id: 'x', cwd: other, source: 'startup' }), env);
+    assert.strictEqual(result.code, 0);
+    assert.ok(!result.stdout.includes('Previous session'), 'no cross-project leakage');
+    cleanupTestDir(other);
+  })) passed++; else failed++;
+
+  if (await asyncTest('stays quiet after /compact', async () => {
+    const result = await startSession('cccc3333-test', { source: 'compact' });
+    assert.ok(!result.stdout.includes('Previous session'));
+  })) passed++; else failed++;
+
+  if (await asyncTest('no package-manager prompt outside JS projects', async () => {
+    const result = await startSession('eeee5555-test');
+    assert.ok(!/package manager/i.test(result.stdout), 'projects without package.json get no PM hint');
   })) passed++; else failed++;
 
   // pre-compact.js tests
   console.log('\npre-compact.js:');
 
-  if (await asyncTest('runs without error', async () => {
-    const result = await runScript(path.join(scriptsDir, 'pre-compact.js'));
-    assert.strictEqual(result.code, 0, `Exit code should be 0, got ${result.code}`);
-  })) passed++; else failed++;
-
-  if (await asyncTest('outputs PreCompact message', async () => {
-    const result = await runScript(path.join(scriptsDir, 'pre-compact.js'));
-    assert.ok(result.stderr.includes('[PreCompact]'), 'Should output PreCompact message');
-  })) passed++; else failed++;
-
-  if (await asyncTest('creates compaction log', async () => {
-    await runScript(path.join(scriptsDir, 'pre-compact.js'));
-    const logFile = path.join(os.homedir(), '.claude', 'sessions', 'compaction-log.txt');
-    assert.ok(fs.existsSync(logFile), 'Compaction log should exist');
+  if (await asyncTest('logs the compaction and prints nothing to stdout', async () => {
+    const result = await runScript(path.join(scriptsDir, 'pre-compact.js'), JSON.stringify({ session_id: 'ffff6666-test', cwd: projectDir, trigger: 'auto' }), env);
+    assert.strictEqual(result.code, 0);
+    assert.strictEqual(result.stdout, '', 'PreCompact stdout would become compaction instructions');
+    const logText = fs.readFileSync(path.join(sessionsDir, 'compaction-log.txt'), 'utf8');
+    assert.ok(logText.includes('auto compaction | session ffff6666'), logText);
   })) passed++; else failed++;
 
   // suggest-compact.js tests
   console.log('\nsuggest-compact.js:');
 
-  if (await asyncTest('runs without error', async () => {
-    const result = await runScript(path.join(scriptsDir, 'suggest-compact.js'), '', {
-      CLAUDE_SESSION_ID: 'test-session-' + Date.now()
-    });
-    assert.strictEqual(result.code, 0, `Exit code should be 0, got ${result.code}`);
-  })) passed++; else failed++;
+  const counterFor = (id) => path.join(os.tmpdir(), `claude-tool-count-${id}`);
 
-  if (await asyncTest('increments counter on each call', async () => {
+  if (await asyncTest('counts per session_id from stdin', async () => {
     const sessionId = 'test-counter-' + Date.now();
-
-    // Run multiple times
     for (let i = 0; i < 3; i++) {
-      await runScript(path.join(scriptsDir, 'suggest-compact.js'), '', {
-        CLAUDE_SESSION_ID: sessionId
-      });
+      const r = await runScript(path.join(scriptsDir, 'suggest-compact.js'), JSON.stringify({ session_id: sessionId, tool_name: 'Edit' }));
+      assert.strictEqual(r.code, 0);
     }
-
-    // Check counter file
-    const counterFile = path.join(os.tmpdir(), `claude-tool-count-${sessionId}`);
-    const count = parseInt(fs.readFileSync(counterFile, 'utf8').trim(), 10);
+    const count = parseInt(fs.readFileSync(counterFor(sessionId), 'utf8').trim(), 10);
     assert.strictEqual(count, 3, `Counter should be 3, got ${count}`);
-
-    // Cleanup
-    fs.unlinkSync(counterFile);
+    fs.unlinkSync(counterFor(sessionId));
   })) passed++; else failed++;
 
-  if (await asyncTest('suggests compact at threshold', async () => {
+  if (await asyncTest('suggests compact at threshold to Claude and the user', async () => {
     const sessionId = 'test-threshold-' + Date.now();
-    const counterFile = path.join(os.tmpdir(), `claude-tool-count-${sessionId}`);
+    fs.writeFileSync(counterFor(sessionId), '49');
+    const result = await runScript(path.join(scriptsDir, 'suggest-compact.js'), JSON.stringify({ session_id: sessionId }), { COMPACT_THRESHOLD: '50' });
+    const out = JSON.parse(result.stdout);
+    assert.ok(out.hookSpecificOutput.additionalContext.includes('50 edit tool calls reached'));
+    assert.strictEqual(out.hookSpecificOutput.hookEventName, 'PreToolUse');
+    assert.ok(out.systemMessage.includes('/compact'));
+    fs.unlinkSync(counterFor(sessionId));
+  })) passed++; else failed++;
 
-    // Set counter to threshold - 1
-    fs.writeFileSync(counterFile, '49');
-
-    const result = await runScript(path.join(scriptsDir, 'suggest-compact.js'), '', {
-      CLAUDE_SESSION_ID: sessionId,
-      COMPACT_THRESHOLD: '50'
-    });
-
-    assert.ok(
-      result.stderr.includes('50 tool calls reached'),
-      'Should suggest compact at threshold'
-    );
-
-    // Cleanup
-    fs.unlinkSync(counterFile);
+  if (await asyncTest('silent below threshold', async () => {
+    const sessionId = 'test-quiet-' + Date.now();
+    const result = await runScript(path.join(scriptsDir, 'suggest-compact.js'), JSON.stringify({ session_id: sessionId }));
+    assert.strictEqual(result.stdout, '');
+    fs.unlinkSync(counterFor(sessionId));
   })) passed++; else failed++;
 
   // evaluate-session.js tests
@@ -198,45 +259,22 @@ async function runTests() {
     assert.strictEqual(result.code, 0, `Exit code should be 0, got ${result.code}`);
   })) passed++; else failed++;
 
-  if (await asyncTest('skips short sessions', async () => {
-    const testDir = createTestDir();
-    const transcriptPath = path.join(testDir, 'transcript.jsonl');
-
-    // Create a short transcript (less than 10 user messages)
-    const transcript = Array(5).fill('{"type":"user","content":"test"}\n').join('');
-    fs.writeFileSync(transcriptPath, transcript);
-
-    const result = await runScript(path.join(scriptsDir, 'evaluate-session.js'), '', {
-      CLAUDE_TRANSCRIPT_PATH: transcriptPath
-    });
-
-    assert.ok(
-      result.stderr.includes('Session too short'),
-      'Should indicate session is too short'
-    );
-
-    cleanupTestDir(testDir);
+  if (await asyncTest('reads transcript_path from stdin and skips short sessions', async () => {
+    const result = await runScript(path.join(scriptsDir, 'evaluate-session.js'), JSON.stringify({ transcript_path: transcriptOf(['a', 'b']) }));
+    assert.ok(result.stderr.includes('Session too short (2 user messages'), result.stderr);
   })) passed++; else failed++;
 
-  if (await asyncTest('processes sessions with enough messages', async () => {
-    const testDir = createTestDir();
-    const transcriptPath = path.join(testDir, 'transcript.jsonl');
-
-    // Create a longer transcript (more than 10 user messages)
-    const transcript = Array(15).fill('{"type":"user","content":"test"}\n').join('');
-    fs.writeFileSync(transcriptPath, transcript);
-
-    const result = await runScript(path.join(scriptsDir, 'evaluate-session.js'), '', {
-      CLAUDE_TRANSCRIPT_PATH: transcriptPath
-    });
-
-    assert.ok(
-      result.stderr.includes('15 messages'),
-      'Should report message count'
-    );
-
-    cleanupTestDir(testDir);
+  if (await asyncTest('flags long sessions for /learn', async () => {
+    const result = await runScript(path.join(scriptsDir, 'evaluate-session.js'), JSON.stringify({ transcript_path: transcriptOf(Array(15).fill('task')) }));
+    assert.ok(result.stderr.includes('15 user messages'), result.stderr);
   })) passed++; else failed++;
+
+  if (test('suite did not write to the real ~/.claude/sessions', () => {
+    assert.ok(fs.existsSync(path.join(sessionsDir, 'compaction-log.txt')), 'writes went to the temp config dir');
+  })) passed++; else failed++;
+
+  cleanupTestDir(configDir);
+  cleanupTestDir(projectDir);
 
   // hooks.json validation
   console.log('\nhooks.json Validation:');

@@ -21,24 +21,26 @@ Strategic compaction at logical boundaries:
 
 ## How It Works
 
-The `suggest-compact.sh` script runs on PreToolUse (Edit/Write) and:
+The plugin wires `scripts/hooks/suggest-compact.js` to PreToolUse on `Edit|Write|MultiEdit` (see `hooks/hooks.json`). It:
 
-1. **Tracks tool calls** - Counts tool invocations in session
-2. **Threshold detection** - Suggests at configurable threshold (default: 50 calls)
-3. **Periodic reminders** - Reminds every 25 calls after threshold
+1. **Counts edit tool calls** per session (keyed by the `session_id` Claude Code passes on stdin)
+2. **Suggests at a threshold** (default: 50 calls)
+3. **Reminds every 25 calls** after the threshold
 
-## Hook Setup
+The suggestion reaches both Claude (as `additionalContext`) and you (as a system message). When you see it, decide whether you are at a logical boundary; if so, run `/compact`, optionally with focus instructions such as `/compact keep the implementation plan and open TODOs`.
 
-Add to your `~/.claude/settings.json`:
+## Manual Setup (without the plugin)
+
+Add to `~/.claude/settings.json`, adjusting the path to where you cloned the repo:
 
 ```json
 {
   "hooks": {
     "PreToolUse": [{
-      "matcher": "tool == \"Edit\" || tool == \"Write\"",
+      "matcher": "Edit|Write|MultiEdit",
       "hooks": [{
         "type": "command",
-        "command": "~/.claude/skills/strategic-compact/suggest-compact.sh"
+        "command": "node /path/to/legends/scripts/hooks/suggest-compact.js"
       }]
     }]
   }
@@ -60,4 +62,4 @@ Environment variables:
 ## Related
 
 - [The Longform Guide](https://x.com/affaanmustafa/status/2014040193557471352) - Token optimization section
-- Memory persistence hooks - For state that survives compaction
+- Session hooks (`session-start.js` / `session-end.js`) - carry where you left off into the next session

@@ -4,13 +4,18 @@
 
 - **PreToolUse**: Before tool execution (validation, parameter modification)
 - **PostToolUse**: After tool execution (auto-format, checks)
-- **Stop**: When session ends (final verification)
+- **Stop**: When Claude finishes a turn (final checks)
+- **SessionStart / SessionEnd**: When a session begins or ends
+- **PreCompact**: Before context compaction
+
+What reaches Claude: blocking hooks (exit code 2) show stderr to Claude. Non-blocking messages must be JSON on stdout (`hookSpecificOutput.additionalContext` for Claude, `systemMessage` for the user), or plain stdout for SessionStart. Claude never sees stderr from a hook that exits 0. Hooks for the same event run in parallel. Helpers: `emitHookOutput()` and `readStdinJsonSync()` in `scripts/lib/utils.js`.
 
 ## LEGENDS Hooks
 
 **Always on:**
-- **Session memory**: SessionStart loads recent context; PreCompact and SessionEnd save state
-- **Continuous learning**: SessionEnd evaluates the session for reusable patterns
+- **Session memory**: SessionEnd writes a record per session to `~/.claude/sessions/` (project, branch, last request, uncommitted files, your notes). The next SessionStart in the same project tells Claude where you left off. Records from other projects are never shown.
+- **Continuous learning**: long sessions are marked for review, and the next session suggests `/learn`
+- **Compaction log**: PreCompact appends to `~/.claude/sessions/compaction-log.txt`
 - **Strategic compact**: suggests `/compact` at logical intervals during long edit sessions
 - **PR hint**: after `gh pr create`, prints the PR URL and a review command
 
@@ -25,7 +30,7 @@
 | `typecheck` | PostToolUse (Edit/Write) | Runs `tsc --noEmit` and shows errors for the edited file |
 | `console-log` | PostToolUse + Stop | Warns about `console.log` in edited and modified files |
 
-Implementation: `scripts/hooks/optional-hooks.js`. Hook matchers are tool-name patterns (`Bash`, `Edit|Write|MultiEdit`); blocking hooks exit with code 2.
+Implementation: `scripts/hooks/optional-hooks.js` (opt-in), `session-start.js`, `session-end.js`, `pre-compact.js`, and `suggest-compact.js`. All hooks honor `CLAUDE_CONFIG_DIR`. Hook matchers are tool-name patterns (`Bash`, `Edit|Write|MultiEdit`); blocking hooks exit with code 2.
 
 ## Auto-Accept Permissions
 

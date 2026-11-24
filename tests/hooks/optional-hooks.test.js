@@ -41,6 +41,16 @@ function run(event, input, env = {}) {
   return { code: res.status, stderr: res.stderr, stdout: res.stdout };
 }
 
+// Non-blocking messages arrive as JSON on stdout. Returns { toClaude, toUser } ('' if none).
+function messages(r) {
+  if (!r.stdout.trim()) return { toClaude: '', toUser: '' };
+  const out = JSON.parse(r.stdout);
+  return {
+    toClaude: (out.hookSpecificOutput && out.hookSpecificOutput.additionalContext) || '',
+    toUser: out.systemMessage || ''
+  };
+}
+
 function runTests() {
   console.log('\n=== Testing optional-hooks.js ===\n');
   let passed = 0;
@@ -63,6 +73,7 @@ function runTests() {
     const r = run('pre-bash', devServer);
     assert.strictEqual(r.code, 0);
     assert.strictEqual(r.stderr, '');
+    assert.strictEqual(r.stdout, '');
   });
   t('stray .md file is NOT blocked by default', () => assert.strictEqual(run('pre-write', strayDoc).code, 0));
 
@@ -76,14 +87,17 @@ function runTests() {
   t('long-running command gets a non-blocking reminder', () => {
     const r = run('pre-bash', { tool_input: { command: 'pytest -q' } }, { LEGENDS_HOOKS: 'tmux' });
     assert.strictEqual(r.code, 0);
-    assert.match(r.stderr, /tmux/);
+    const m = messages(r);
+    assert.match(m.toClaude, /tmux/);
+    assert.match(m.toUser, /tmux/);
+    assert.strictEqual(JSON.parse(r.stdout).hookSpecificOutput.hookEventName, 'PreToolUse');
   });
 
   console.log('\npush-reminder flag:');
   t('git push prints a reminder without blocking', () => {
     const r = run('pre-bash', { tool_input: { command: 'git push origin main' } }, { LEGENDS_HOOKS: 'push-reminder' });
     assert.strictEqual(r.code, 0);
-    assert.match(r.stderr, /review/i);
+    assert.match(messages(r).toClaude, /review/i);
   });
 
   console.log('\nblock-md flag:');
@@ -106,10 +120,15 @@ function runTests() {
   t('edited file with console.log warns when enabled', () => {
     const r = run('post-edit', { tool_input: { file_path: jsFile } }, { LEGENDS_HOOKS: 'console-log' });
     assert.strictEqual(r.code, 0);
-    assert.match(r.stderr, /2: console\.log\(x\)/);
-    assert.doesNotMatch(r.stderr, /commented/);
+    const m = messages(r);
+    assert.match(m.toClaude, /2: console\.log\(x\)/);
+    assert.doesNotMatch(m.toClaude, /commented/);
+    assert.strictEqual(JSON.parse(r.stdout).hookSpecificOutput.hookEventName, 'PostToolUse');
   });
-  t('edited file with console.log is silent when disabled', () => assert.strictEqual(run('post-edit', { tool_input: { file_path: jsFile } }).stderr, ''));
+  t('edited file with console.log is silent when disabled', () => {
+    const r = run('post-edit', { tool_input: { file_path: jsFile } });
+    assert.strictEqual(r.stdout + r.stderr, '');
+  });
   fs.rmSync(dir, { recursive: true, force: true });
 
   console.log('\nPR hint (always on):');
@@ -119,9 +138,17 @@ function runTests() {
       tool_response: { stdout: 'https://github.com/acme/widgets/pull/42\n' }
     });
     assert.strictEqual(r.code, 0);
-    assert.match(r.stderr, /gh pr review 42 --repo acme\/widgets/);
+    assert.match(messages(r).toClaude, /gh pr review 42 --repo acme\/widgets/);
   });
-  t('other bash commands print nothing', () => assert.strictEqual(run('post-bash', { tool_input: { command: 'ls' }, tool_response: { stdout: '' } }).stderr, ''));
+  t('other bash commands print nothing', () => {
+    const r = run('post-bash', { tool_input: { command: 'ls' }, tool_response: { stdout: '' } });
+    assert.strictEqual(r.stdout + r.stderr, '');
+  });
+  t('blocking messages go to stderr, not stdout JSON', () => {
+    const r = run('pre-bash', devServer, { LEGENDS_HOOKS: 'tmux' });
+    assert.strictEqual(r.stdout, '');
+    assert.match(r.stderr, /BLOCKED/);
+  });
 
   console.log('\nRobustness:');
   t('malformed stdin never blocks', () => assert.strictEqual(run('pre-bash', '{not json', { LEGENDS_HOOKS: 'all' }).code, 0));

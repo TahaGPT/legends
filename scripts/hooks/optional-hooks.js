@@ -24,11 +24,16 @@
  * Exit codes follow Claude Code hook semantics: 0 = continue, 2 = block the tool
  * call (PreToolUse) and show stderr to Claude. Any internal error exits 0 so a
  * broken hook never blocks work.
+ *
+ * Non-blocking messages are printed as JSON on stdout (additionalContext for
+ * Claude, systemMessage for the user), because Claude never sees stderr from a
+ * hook that exits 0. The Stop reminder goes to the user only.
  */
 
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
+const { emitHookOutput } = require('../lib/utils');
 
 const ALL_FLAGS = ['tmux', 'push-reminder', 'block-md', 'prettier', 'typecheck', 'console-log'];
 const ALLOWED_DOC_FILES = /(^|[\\/])(README|CLAUDE|AGENTS|CONTRIBUTING)\.md$/;
@@ -57,12 +62,24 @@ function filePathOf(input) {
   return (input.tool_input && (input.tool_input.file_path || input.tool_input.path)) || '';
 }
 
+// Hook event each handler runs under, for the JSON output shape.
+const EVENT_NAMES = {
+  'pre-bash': 'PreToolUse',
+  'pre-write': 'PreToolUse',
+  'post-bash': 'PostToolUse',
+  'post-edit': 'PostToolUse',
+  'stop': 'Stop'
+};
+
+// Non-blocking messages collected during one run, emitted once at the end.
+const notes = [];
+
 function warn(lines) {
-  for (const line of lines) process.stderr.write(`[Hook] ${line}\n`);
+  for (const line of lines) notes.push(`[Hook] ${line}`);
 }
 
 function block(lines) {
-  warn(lines);
+  for (const line of lines) process.stderr.write(`[Hook] ${line}\n`);
   process.exit(2);
 }
 
@@ -168,14 +185,15 @@ function main() {
   const event = process.argv[2];
   const handler = handlers[event];
   if (!handler) {
-    warn([`optional-hooks: unknown event "${event}"`]);
+    process.stderr.write(`[Hook] optional-hooks: unknown event "${event}"\n`);
     process.exit(0);
   }
   try {
     handler(readInput(), enabledFlags());
   } catch (err) {
-    warn([`optional-hooks (${event}) error: ${err.message}`]);
+    process.stderr.write(`[Hook] optional-hooks (${event}) error: ${err.message}\n`);
   }
+  if (notes.length) emitHookOutput(EVENT_NAMES[event], notes, { claude: event !== 'stop' });
   process.exit(0);
 }
 

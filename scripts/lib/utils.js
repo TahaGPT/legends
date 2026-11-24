@@ -21,10 +21,11 @@ function getHomeDir() {
 }
 
 /**
- * Get the Claude config directory
+ * Get the Claude config directory. Honors CLAUDE_CONFIG_DIR (Claude Code's own
+ * override), which also lets tests point the hooks at a temporary directory.
  */
 function getClaudeDir() {
-  return path.join(getHomeDir(), '.claude');
+  return process.env.CLAUDE_CONFIG_DIR || path.join(getHomeDir(), '.claude');
 }
 
 /**
@@ -177,7 +178,42 @@ async function readStdinJson() {
 }
 
 /**
- * Log to stderr (visible to user in Claude Code)
+ * Read hook input JSON from stdin synchronously. Returns {} on empty or invalid input.
+ */
+function readStdinJsonSync() {
+  try {
+    const data = fs.readFileSync(0, 'utf8');
+    return data.trim() ? JSON.parse(data) : {};
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Emit a non-blocking hook message as JSON on stdout.
+ *
+ * Claude never sees stderr from a hook that exits 0, so plain log() output is
+ * invisible to it. This writes the documented JSON shape instead:
+ *   systemMessage                        -> shown to the user
+ *   hookSpecificOutput.additionalContext -> added to Claude's context
+ * Call it at most once per hook process (only one JSON object is read).
+ *
+ * @param {string} event - hook event name, e.g. 'PostToolUse'
+ * @param {string|string[]} lines - message
+ * @param {object} options - { claude: boolean, user: boolean }
+ */
+function emitHookOutput(event, lines, { claude = true, user = true } = {}) {
+  const text = [].concat(lines).filter(Boolean).join('\n');
+  if (!text) return;
+  const out = {};
+  if (user) out.systemMessage = text;
+  if (claude) out.hookSpecificOutput = { hookEventName: event, additionalContext: text };
+  process.stdout.write(JSON.stringify(out) + '\n');
+}
+
+/**
+ * Log to stderr. Only the user sees this, and only in verbose/transcript mode;
+ * Claude never does. Use emitHookOutput() for messages Claude should act on.
  */
 function log(message) {
   console.error(message);
@@ -357,6 +393,8 @@ module.exports = {
 
   // Hook I/O
   readStdinJson,
+  readStdinJsonSync,
+  emitHookOutput,
   log,
   output,
 

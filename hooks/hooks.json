@@ -30,7 +30,7 @@
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/suggest-compact.js\""
           }
         ],
-        "description": "Suggest manual compaction at logical intervals"
+        "description": "Suggest a manual /compact at logical intervals (COMPACT_THRESHOLD, default 50 edits)"
       }
     ],
     "PreCompact": [
@@ -42,7 +42,7 @@
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/pre-compact.js\""
           }
         ],
-        "description": "Save state before context compaction"
+        "description": "Log compaction events (prints nothing, so the compaction summary is unaffected)"
       }
     ],
     "SessionStart": [
@@ -54,7 +54,7 @@
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/session-start.js\""
           }
         ],
-        "description": "Load previous context and detect package manager on new session"
+        "description": "Tell Claude where the last session in this project left off; package-manager hint in JS projects"
       }
     ],
     "PostToolUse": [
@@ -100,17 +100,7 @@
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/session-end.js\""
           }
         ],
-        "description": "Persist session state on end"
-      },
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/evaluate-session.js\""
-          }
-        ],
-        "description": "Evaluate session for extractable patterns"
+        "description": "Save a per-session record (project, branch, last request, uncommitted files, learning-review hint) for the next session"
       }
     ]
   }
