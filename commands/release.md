@@ -41,3 +41,4 @@ Nothing leaves your machine before step 7. If you decline, the summary includes 
 
 - `/ship`: delivers individual features as PRs; `/release` packages merged work into a version
 - `devops` agent: if tags trigger deployments, it owns the pipeline and rollback steps
+- `dependency-auditor` agent: run it before a release to catch reachable vulnerabilities and license issues in what you're about to ship

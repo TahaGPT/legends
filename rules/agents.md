@@ -19,6 +19,9 @@ Located in `~/.claude/agents/`:
 | api-designer | Contract-first API/RPC/event/SDK design | New or changed endpoints and public interfaces |
 | devops | CI/CD, Docker, env config, deploy manifests | Config/infra changes, CI failures, pipeline setup |
 | release-manager | Semver bump, changelog, tag, GitHub release | Cutting a release (/release) |
+| performance-profiler | Measure, find bottleneck, prove the fix | Slow code, latency/memory targets |
+| dependency-auditor | Vulnerabilities, licenses, upgrade plans | Periodic reviews, advisories, before releases |
+| ui-designer | Accessibility (WCAG 2.2 AA), responsive, UI states | User-facing UI changes, UI audits |
 | e2e-runner | E2E testing | Critical user flows |
 | refactor-cleaner | Dead code cleanup | Code maintenance |
 | doc-updater | Documentation | Updating docs |

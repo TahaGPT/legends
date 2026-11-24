@@ -17,6 +17,8 @@ You make code buildable, testable, and deployable in a repeatable way: Dockerfil
 - **Pin versions:** base images by tag (by digest for production images), GitHub Actions by version tag or SHA, toolchains via `rust-toolchain.toml` / `.nvmrc` / `.python-version`.
 - **Match the project.** Read the existing CI, scripts, and `CLAUDE.md` first. Extend what exists; don't introduce a second CI system or a new cloud provider.
 
+Load the `observability` skill when setting up services, health checks, logging/metrics/tracing pipelines, dashboards, or alerts.
+
 ## Discover First
 
 ```bash

@@ -108,6 +108,9 @@ legends/
 |   |-- api-designer.md      # Contract-first API and interface design
 |   |-- devops.md            # CI/CD, Docker, env config, deployments
 |   |-- release-manager.md   # Versioning, changelog, tags, releases
+|   |-- performance-profiler.md # Measure-first performance work
+|   |-- dependency-auditor.md # Vulnerabilities, licenses, upgrade plans
+|   |-- ui-designer.md       # Accessibility, responsive layout, UI states
 |   |-- refactor-cleaner.md  # Dead code cleanup
 |   |-- doc-updater.md       # Documentation sync
 |
@@ -121,6 +124,7 @@ legends/
 |   |-- rust-patterns/              # Rust idioms, async, testing, security
 |   |-- python-patterns/            # Python tooling, typing, async, testing, security
 |   |-- llm-integration/            # Production LLM features: structured output, tools, cost, injection defense
+|   |-- observability/              # Logging, metrics, tracing, health checks, SLOs, alerts
 |   |-- security-review/            # Security checklist
 |   |-- eval-harness/               # Verification loop evaluation (Longform Guide)
 |   |-- verification-loop/          # Continuous verification (Longform Guide)
@@ -312,6 +316,9 @@ spec → explore → design (architect / database-architect / api-designer, as n
 | Docs and codemaps | `doc-updater` |
 | CI, Docker, env config, deployments | `devops` |
 | Versioning, changelog, tags, releases | `/release` → `release-manager` |
+| Slow code, latency or memory targets | `performance-profiler` |
+| Vulnerable, outdated, or risky dependencies; upgrade plans | `dependency-auditor` |
+| Accessibility, responsive layout, UI states | `ui-designer` |
 
 ### Language support
 
@@ -422,7 +429,7 @@ Please contribute! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 LEGENDS is a fork of [everything-claude-code](https://github.com/affaan-m/everything-claude-code) by [Affaan Mustafa](https://x.com/affaanmustafa), released under the MIT License. The original agents, skills, hooks, rules, and guides come from that project.
 
-LEGENDS adds the end-to-end pipeline (`/ship`, `/release`), the `explorer`, `implementer`, `database-architect`, `api-designer`, `devops`, `release-manager`, and `rust-build-resolver` agents, the `rust-patterns`, `python-patterns`, and `llm-integration` skills, and project-agnostic versions of the original agents.
+LEGENDS adds the end-to-end pipeline (`/ship`, `/release`), the `explorer`, `implementer`, `database-architect`, `api-designer`, `devops`, `release-manager`, `rust-build-resolver`, `performance-profiler`, `dependency-auditor`, and `ui-designer` agents, the `rust-patterns`, `python-patterns`, `llm-integration`, and `observability` skills, and project-agnostic versions of the original agents.
 
 ---
 
