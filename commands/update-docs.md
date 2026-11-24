@@ -1,3 +1,7 @@
+---
+description: Sync documentation (scripts reference, environment variables, contributor and runbook docs) from the source of truth in the repo.
+---
+
 # Update Documentation
 
 Sync documentation from source-of-truth:

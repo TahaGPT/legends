@@ -1,3 +1,7 @@
+---
+description: Fix build and type errors one at a time until the build is green. Delegates to rust-build-resolver for cargo projects.
+---
+
 # Build and Fix
 
 Incrementally fix build errors.

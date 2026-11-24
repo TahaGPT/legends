@@ -1,3 +1,8 @@
+---
+description: Eval-driven development: define, check, and report capability and regression evals for a feature, with pass@k tracking.
+argument-hint: "[define|check|report|list] [feature-name]"
+---
+
 # Eval Command
 
 Manage eval-driven development workflow.

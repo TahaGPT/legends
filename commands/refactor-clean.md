@@ -1,3 +1,7 @@
+---
+description: Find dead code and unused dependencies, then remove them safely one batch at a time with tests run after each removal.
+---
+
 # Refactor Clean
 
 Safely identify and remove dead code with test verification:

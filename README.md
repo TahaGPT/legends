@@ -97,8 +97,8 @@ legends/
 |   |-- planner.md           # Feature implementation planning
 |   |-- architect.md         # System design decisions
 |   |-- tdd-guide.md         # Test-driven development
-|   |-- code-reviewer.md     # Quality and security review
-|   |-- security-reviewer.md # Vulnerability analysis
+|   |-- code-reviewer.md     # Verified correctness/design review (read-only)
+|   |-- security-reviewer.md # Threat model + exploitability review (read-only)
 |   |-- build-error-resolver.md
 |   |-- rust-build-resolver.md
 |   |-- explorer.md
@@ -387,7 +387,10 @@ node tests/run-all.js
 node tests/lib/utils.test.js
 node tests/lib/package-manager.test.js
 node tests/hooks/hooks.test.js
+node tests/plugin/structure.test.js
 ```
+
+`tests/plugin/structure.test.js` validates the plugin itself: frontmatter on every agent, skill, and command; valid tool and model names; reviewer agents staying read-only; every agent and skill referenced by a command existing; manifests; and hook script paths. Run it after adding or renaming any agent, skill, or command.
 
 ---
 

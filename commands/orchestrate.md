@@ -1,3 +1,8 @@
+---
+description: Run a sequence of agents with structured handoffs: feature, bugfix, refactor, security, or a custom agent chain.
+argument-hint: "[feature|bugfix|refactor|security|custom <agents>] <task description>"
+---
+
 # Orchestrate Command
 
 Sequential agent workflow for complex tasks.

@@ -84,10 +84,11 @@ If the build or tests are broken and the implementer can't fix them, use `rust-b
 ### Stage 5: Review → `code-reviewer` + `security-reviewer` (in parallel)
 Launch both in a **single message** so they run concurrently. Give each the diff scope (`git diff <default-branch>...HEAD`), the spec, and the implementer handoff (especially "Areas Needing Careful Review"). For Rust, tell them to apply the `rust-patterns` review checklist.
 
-Merge the findings into one list, de-duplicated and ranked CRITICAL > HIGH > MEDIUM > LOW.
+Both reviewers are read-only and label every finding `CONFIRMED` or `PLAUSIBLE`. Merge the findings into one list, de-duplicated and ranked CRITICAL > HIGH > MEDIUM > LOW, with CONFIRMED before PLAUSIBLE. The code-reviewer also checks each acceptance criterion; an unmet criterion counts as HIGH.
 
 ### Stage 6: Fix Loop → `implementer` (fix-loop mode)
-- If there are any CRITICAL or HIGH findings, send them to the implementer, then re-run Stage 5 **only for the reviewer(s) that raised them**.
+- If there are any CRITICAL or HIGH findings, send them to the implementer with each finding's evidence, failure scenario, and suggested test, then re-run Stage 5 **only for the reviewer(s) that raised them**.
+- `PLAUSIBLE` CRITICAL/HIGH findings go to the implementer too, which either fixes them or refutes them with evidence (a test, or a trace). A refuted finding is closed only when the reviewer that raised it accepts the evidence on the re-run.
 - **At most 2 fix loops.** If CRITICAL/HIGH findings remain after that, stop and present them to the user with the options.
 - MEDIUM/LOW findings the implementer deferred go into the final report.
 

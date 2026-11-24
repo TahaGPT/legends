@@ -1,3 +1,8 @@
+---
+description: Run full verification: build, types, lint, tests with coverage, security scan, debug-statement audit, and git status. Uses cargo commands for Rust projects.
+argument-hint: "[quick|full|pre-commit|pre-pr]"
+---
+
 # Verification Command
 
 Run comprehensive verification on current codebase state.
