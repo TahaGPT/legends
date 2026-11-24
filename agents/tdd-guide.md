@@ -20,13 +20,13 @@ You are a Test-Driven Development (TDD) specialist who ensures all code is devel
 ### Step 1: Write Test First (RED)
 ```typescript
 // ALWAYS start with a failing test
-describe('searchMarkets', () => {
-  it('returns semantically similar markets', async () => {
-    const results = await searchMarkets('election')
+describe('searchProducts', () => {
+  it('returns semantically similar products', async () => {
+    const results = await searchProducts('headphones')
 
     expect(results).toHaveLength(5)
-    expect(results[0].name).toContain('Trump')
-    expect(results[1].name).toContain('Biden')
+    expect(results[0].name).toContain('Headphones')
+    expect(results[1].name).toContain('Earbuds')
   })
 })
 ```
@@ -39,7 +39,7 @@ npm test
 
 ### Step 3: Write Minimal Implementation (GREEN)
 ```typescript
-export async function searchMarkets(query: string) {
+export async function searchProducts(query: string) {
   const embedding = await generateEmbedding(query)
   const results = await vectorSearch(embedding)
   return results
@@ -97,9 +97,9 @@ Test API endpoints and database operations:
 import { NextRequest } from 'next/server'
 import { GET } from './route'
 
-describe('GET /api/markets/search', () => {
+describe('GET /api/products/search', () => {
   it('returns 200 with valid results', async () => {
-    const request = new NextRequest('http://localhost/api/markets/search?q=trump')
+    const request = new NextRequest('http://localhost/api/products/search?q=headphones')
     const response = await GET(request, {})
     const data = await response.json()
 
@@ -109,7 +109,7 @@ describe('GET /api/markets/search', () => {
   })
 
   it('returns 400 for missing query', async () => {
-    const request = new NextRequest('http://localhost/api/markets/search')
+    const request = new NextRequest('http://localhost/api/products/search')
     const response = await GET(request, {})
 
     expect(response.status).toBe(400)
@@ -117,9 +117,9 @@ describe('GET /api/markets/search', () => {
 
   it('falls back to substring search when Redis unavailable', async () => {
     // Mock Redis failure
-    jest.spyOn(redis, 'searchMarketsByVector').mockRejectedValue(new Error('Redis down'))
+    jest.spyOn(redis, 'searchProductsByVector').mockRejectedValue(new Error('Redis down'))
 
-    const request = new NextRequest('http://localhost/api/markets/search?q=test')
+    const request = new NextRequest('http://localhost/api/products/search?q=test')
     const response = await GET(request, {})
     const data = await response.json()
 
@@ -135,22 +135,22 @@ Test complete user journeys with Playwright:
 ```typescript
 import { test, expect } from '@playwright/test'
 
-test('user can search and view market', async ({ page }) => {
+test('user can search and view product', async ({ page }) => {
   await page.goto('/')
 
-  // Search for market
-  await page.fill('input[placeholder="Search markets"]', 'election')
+  // Search for product
+  await page.fill('input[placeholder="Search products"]', 'headphones')
   await page.waitForTimeout(600) // Debounce
 
   // Verify results
-  const results = page.locator('[data-testid="market-card"]')
+  const results = page.locator('[data-testid="product-card"]')
   await expect(results).toHaveCount(5, { timeout: 5000 })
 
   // Click first result
   await results.first().click()
 
-  // Verify market page loaded
-  await expect(page).toHaveURL(/\/markets\//)
+  // Verify product page loaded
+  await expect(page).toHaveURL(/\/products\//)
   await expect(page.locator('h1')).toBeVisible()
 })
 ```
@@ -164,7 +164,7 @@ jest.mock('@/lib/supabase', () => ({
     from: jest.fn(() => ({
       select: jest.fn(() => ({
         eq: jest.fn(() => Promise.resolve({
-          data: mockMarkets,
+          data: mockProducts,
           error: null
         }))
       }))
@@ -176,7 +176,7 @@ jest.mock('@/lib/supabase', () => ({
 ### Mock Redis
 ```typescript
 jest.mock('@/lib/redis', () => ({
-  searchMarketsByVector: jest.fn(() => Promise.resolve([
+  searchProductsByVector: jest.fn(() => Promise.resolve([
     { slug: 'test-1', similarity_score: 0.95 },
     { slug: 'test-2', similarity_score: 0.90 }
   ]))

@@ -362,19 +362,19 @@ function processData(data: Array<{ value: number }>) {
 ## Errors Fixed
 
 ### 1. [Error Category - e.g., Type Inference]
-**Location:** `src/components/MarketCard.tsx:45`
+**Location:** `src/components/ProductCard.tsx:45`
 **Error Message:**
 ```
-Parameter 'market' implicitly has an 'any' type.
+Parameter 'product' implicitly has an 'any' type.
 ```
 
 **Root Cause:** Missing type annotation for function parameter
 
 **Fix Applied:**
 ```diff
-- function formatMarket(market) {
-+ function formatMarket(market: Market) {
-    return market.name
+- function formatProduct(product) {
++ function formatProduct(product: Product) {
+    return product.name
   }
 ```
 

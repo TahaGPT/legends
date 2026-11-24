@@ -36,23 +36,23 @@ The planner agent will:
 ## Example Usage
 
 ```
-User: /plan I need to add real-time notifications when markets resolve
+User: /plan I need to add real-time notifications when watched products come back in stock
 
 Agent (planner):
-# Implementation Plan: Real-Time Market Resolution Notifications
+# Implementation Plan: Real-Time Back-in-Stock Notifications
 
 ## Requirements Restatement
-- Send notifications to users when markets they're watching resolve
+- Send notifications to users when products they're watching come back in stock
 - Support multiple notification channels (in-app, email, webhook)
 - Ensure notifications are delivered reliably
-- Include market outcome and user's position result
+- Include product name, current price, and a link to buy
 
 ## Implementation Phases
 
 ### Phase 1: Database Schema
-- Add notifications table with columns: id, user_id, market_id, type, status, created_at
+- Add notifications table with columns: id, user_id, product_id, type, status, created_at
 - Add user_notification_preferences table for channel preferences
-- Create indexes on user_id and market_id for performance
+- Create indexes on user_id and product_id for performance
 
 ### Phase 2: Notification Service
 - Create notification service in lib/notifications.ts
@@ -61,8 +61,8 @@ Agent (planner):
 - Create notification templates
 
 ### Phase 3: Integration Points
-- Hook into market resolution logic (when status changes to "resolved")
-- Query all users with positions in market
+- Hook into inventory update logic (when stock changes from 0 to above 0)
+- Query all users watching the product
 - Enqueue notifications for each user
 
 ### Phase 4: Frontend Components
@@ -78,8 +78,8 @@ Agent (planner):
 
 ## Risks
 - HIGH: Email deliverability (SPF/DKIM required)
-- MEDIUM: Performance with 1000+ users per market
-- MEDIUM: Notification spam if markets resolve frequently
+- MEDIUM: Performance with 1000+ users per product
+- MEDIUM: Notification spam if stock fluctuates frequently
 - LOW: Real-time subscription overhead
 
 ## Estimated Complexity: MEDIUM

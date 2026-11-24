@@ -14,6 +14,7 @@ const testFiles = [
   'lib/utils.test.js',
   'lib/package-manager.test.js',
   'hooks/hooks.test.js',
+  'hooks/optional-hooks.test.js',
   'plugin/structure.test.js'
 ];
 

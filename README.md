@@ -359,17 +359,27 @@ Skills are workflow definitions invoked by commands or agents:
 
 ### Hooks
 
-Hooks fire on tool events. Example - warn about console.log:
+Hooks fire on tool and session events. The matcher is a pattern over **tool names**; the hook receives the event as JSON on stdin, and a PreToolUse hook blocks the call by exiting with code 2:
 
 ```json
 {
-  "matcher": "tool == \"Edit\" && tool_input.file_path matches \"\\\\.(ts|tsx|js|jsx)$\"",
+  "matcher": "Edit|Write|MultiEdit",
   "hooks": [{
     "type": "command",
-    "command": "#!/bin/bash\ngrep -n 'console\\.log' \"$file_path\" && echo '[Hook] Remove console.log' >&2"
+    "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/optional-hooks.js\" post-edit"
   }]
 }
 ```
+
+**What's on by default:** session memory (load/save context), continuous learning, compaction suggestions, and a PR review hint after `gh pr create`.
+
+**Opt-in** (off unless you enable them) with the `LEGENDS_HOOKS` environment variable in `~/.claude/settings.json`:
+
+```json
+{ "env": { "LEGENDS_HOOKS": "tmux,prettier,console-log" } }
+```
+
+Flags: `tmux` (block dev servers outside tmux), `push-reminder`, `block-md` (block stray .md/.txt files), `prettier` (format edited JS/TS), `typecheck` (tsc after TS edits), `console-log` (warn about console.log), or `all`. See `rules/hooks.md`.
 
 ### Rules
 

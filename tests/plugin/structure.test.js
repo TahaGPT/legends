@@ -283,6 +283,19 @@ function runTests() {
     assertNoProblems(problems);
   });
 
+  run('hook matchers are tool-name patterns, not expressions', () => {
+    const hooks = JSON.parse(read(path.join(ROOT, 'hooks', 'hooks.json'))).hooks;
+    const problems = [];
+    for (const [event, entries] of Object.entries(hooks)) {
+      for (const entry of entries) {
+        const m = entry.matcher;
+        if (m === undefined || m === '*' || m === '') continue;
+        if (/==|&&|\|\||\bmatches\b|tool_input/.test(m)) problems.push(`${event}: expression matcher "${m}" never matches a tool name`);
+      }
+    }
+    assertNoProblems(problems);
+  });
+
   console.log('\n=== Test Results ===');
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

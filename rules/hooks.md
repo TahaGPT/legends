@@ -6,21 +6,26 @@
 - **PostToolUse**: After tool execution (auto-format, checks)
 - **Stop**: When session ends (final verification)
 
-## Current Hooks (in ~/.claude/settings.json)
+## LEGENDS Hooks
 
-### PreToolUse
-- **tmux reminder**: Suggests tmux for long-running commands (npm, pnpm, yarn, cargo, etc.)
-- **git push review**: Opens Zed for review before push
-- **doc blocker**: Blocks creation of unnecessary .md/.txt files
+**Always on:**
+- **Session memory**: SessionStart loads recent context; PreCompact and SessionEnd save state
+- **Continuous learning**: SessionEnd evaluates the session for reusable patterns
+- **Strategic compact**: suggests `/compact` at logical intervals during long edit sessions
+- **PR hint**: after `gh pr create`, prints the PR URL and a review command
 
-### PostToolUse
-- **PR creation**: Logs PR URL and GitHub Actions status
-- **Prettier**: Auto-formats JS/TS files after edit
-- **TypeScript check**: Runs tsc after editing .ts/.tsx files
-- **console.log warning**: Warns about console.log in edited files
+**Opt-in** via the `LEGENDS_HOOKS` environment variable (comma-separated, or `all`), e.g. `"env": { "LEGENDS_HOOKS": "tmux,console-log" }` in `~/.claude/settings.json`:
 
-### Stop
-- **console.log audit**: Checks all modified files for console.log before session ends
+| Flag | Event | Behavior |
+|------|-------|----------|
+| `tmux` | PreToolUse (Bash) | Blocks dev servers outside tmux; reminds to use tmux for long commands |
+| `push-reminder` | PreToolUse (Bash) | Reminder to review the diff before `git push` |
+| `block-md` | PreToolUse (Write) | Blocks new `.md`/`.txt` files other than README/CLAUDE/AGENTS/CONTRIBUTING |
+| `prettier` | PostToolUse (Edit/Write) | Formats edited JS/TS files with the project's Prettier |
+| `typecheck` | PostToolUse (Edit/Write) | Runs `tsc --noEmit` and shows errors for the edited file |
+| `console-log` | PostToolUse + Stop | Warns about `console.log` in edited and modified files |
+
+Implementation: `scripts/hooks/optional-hooks.js`. Hook matchers are tool-name patterns (`Bash`, `Edit|Write|MultiEdit`); blocking hooks exit with code 2.
 
 ## Auto-Accept Permissions
 

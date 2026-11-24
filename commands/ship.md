@@ -32,7 +32,7 @@ Keep run state in `.claude/ship/<slug>/state.json` (slug = short kebab-case from
 }
 ```
 
-Update it at the end of every stage. Make sure `.claude/ship/` is in `.gitignore` (add it if missing). Handoffs live in this JSON file, not separate markdown files, because the plugin's hooks block stray `.md` files.
+Update it at the end of every stage. Make sure `.claude/ship/` is in `.gitignore` (add it if missing). Handoffs live in this JSON file, not separate markdown files, so a run doesn't scatter documents through the repo (and keeps working when the optional `block-md` hook is enabled).
 
 ## Pipeline
 
