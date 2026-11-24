@@ -1,5 +1,7 @@
 # Research Context
 
+> Load for a research-focused session: `claude --append-system-prompt "$(cat contexts/research.md)"` (or paste it into a project CLAUDE.md).
+
 Mode: Exploration, investigation, learning
 Focus: Understanding before acting
 
@@ -20,7 +22,7 @@ Focus: Understanding before acting
 - Read for understanding code
 - Grep, Glob for finding patterns
 - WebSearch, WebFetch for external docs
-- Task with Explore agent for codebase questions
+- The explorer agent for codebase questions
 
 ## Output
 Findings first, recommendations second

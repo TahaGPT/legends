@@ -1,98 +1,51 @@
-# User-Level CLAUDE.md Example
+# Example User-Level CLAUDE.md
 
-This is an example user-level CLAUDE.md file. Place at `~/.claude/CLAUDE.md`.
-
-User-level configs apply globally across all projects. Use for:
-- Personal coding preferences
-- Universal rules you always want enforced
-- Links to your modular rules
+A template for `~/.claude/CLAUDE.md`, which applies to every project. Use it for personal preferences that hold everywhere. Project-specific rules belong in the project's own `CLAUDE.md` (see `examples/CLAUDE.md`). Everything below is an example; keep what matches how you work.
 
 ---
 
-## Core Philosophy
+## How I Work
 
-You are Claude Code. I use specialized agents and skills for complex tasks.
+1. **Plan before large changes:** for anything touching several files, propose a plan and wait for my OK.
+2. **Delegate:** use the specialized agents (planner, explorer, code-reviewer, security-reviewer, and others) for the work they cover, and run independent agents in parallel.
+3. **Test-first** for new behavior and bug fixes.
+4. **Security is not optional:** no secrets in code, validate input, and flag anything risky.
+5. **Ask when it's genuinely my call;** otherwise make a sensible choice and tell me what you chose.
 
-**Key Principles:**
-1. **Agent-First**: Delegate to specialized agents for complex work
-2. **Parallel Execution**: Use Task tool with multiple agents when possible
-3. **Plan Before Execute**: Use Plan Mode for complex operations
-4. **Test-Driven**: Write tests before implementation
-5. **Security-First**: Never compromise on security
+## Rules
 
----
+If you copied the plugin's rules to `~/.claude/rules/` (manual install):
 
-## Modular Rules
+| File | Contents |
+|------|----------|
+| coding-style.md | Immutability, file size, error handling, validation |
+| testing.md | Test-first workflow, what to test, coverage guide |
+| security.md | Pre-commit security checklist, secrets, incident steps |
+| git-workflow.md | Commits, PRs, feature workflow |
+| agents.md | Which agent to use when |
+| patterns.md | API responses, data-access layer, configuration |
+| performance.md | Model tiers, context management |
+| hooks.md | What the hooks do and how to opt in |
 
-Detailed guidelines are in `~/.claude/rules/`:
+## Preferences
 
-| Rule File | Contents |
-|-----------|----------|
-| security.md | Security checks, secret management |
-| coding-style.md | Immutability, file organization, error handling |
-| testing.md | TDD workflow, 80% coverage requirement |
-| git-workflow.md | Commit format, PR workflow |
-| agents.md | Agent orchestration, when to use which agent |
-| patterns.md | API response, repository patterns |
-| performance.md | Model selection, context management |
-
----
-
-## Available Agents
-
-Located in `~/.claude/agents/`:
-
-| Agent | Purpose |
-|-------|---------|
-| planner | Feature implementation planning |
-| architect | System design and architecture |
-| tdd-guide | Test-driven development |
-| code-reviewer | Code review for quality/security |
-| security-reviewer | Security vulnerability analysis |
-| build-error-resolver | Build error resolution |
-| e2e-runner | Playwright E2E testing |
-| refactor-cleaner | Dead code cleanup |
-| doc-updater | Documentation updates |
-
----
-
-## Personal Preferences
-
-### Code Style
-- No emojis in code, comments, or documentation
-- Prefer immutability - never mutate objects or arrays
-- Many small files over few large files
-- 200-400 lines typical, 800 max per file
+### Code
+- [e.g. Prefer immutability; small focused files; descriptive names over comments]
+- [e.g. No emojis in code or commit messages]
 
 ### Git
-- Conventional commits: `feat:`, `fix:`, `refactor:`, `docs:`, `test:`
-- Always test locally before committing
-- Small, focused commits
+- [e.g. Conventional commits; small focused commits; never push without asking]
 
-### Testing
-- TDD: Write tests first
-- 80% minimum coverage
-- Unit + integration + E2E for critical flows
+### Communication
+- [e.g. Lead with the answer; keep summaries short; show file:line references]
 
----
-
-## Editor Integration
-
-I use Zed as my primary editor:
-- Agent Panel for file tracking
-- CMD+Shift+R for command palette
-- Vim mode enabled
+### Tools
+- [e.g. Package manager: pnpm. Python: uv. Editor: your editor of choice]
 
 ---
 
-## Success Metrics
+## Done Means
 
-You are successful when:
-- All tests pass (80%+ coverage)
-- No security vulnerabilities
-- Code is readable and maintainable
-- User requirements are met
-
----
-
-**Philosophy**: Agent-first design, parallel execution, plan before action, test before code, security always.
+- Tests pass and new behavior is covered
+- No new security issues
+- The change does what I asked, nothing more

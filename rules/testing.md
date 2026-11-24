@@ -1,30 +1,31 @@
-# Testing Requirements
+# Testing
 
-## Minimum Test Coverage: 80%
+## Test-First by Default
 
-Test Types (ALL required):
-1. **Unit Tests** - Individual functions, utilities, components
-2. **Integration Tests** - API endpoints, database operations
-3. **E2E Tests** - Critical user flows (Playwright)
+For new behavior and bug fixes:
+1. Write a test that captures the requirement or reproduces the bug (RED). Run it and see it fail for the right reason.
+2. Write the minimal code to pass (GREEN).
+3. Refactor with the tests green (IMPROVE).
 
-## Test-Driven Development
+Spikes and throwaway prototypes can skip this. Their code is rewritten test-first before it ships.
 
-MANDATORY workflow:
-1. Write test first (RED)
-2. Run test - it should FAIL
-3. Write minimal implementation (GREEN)
-4. Run test - it should PASS
-5. Refactor (IMPROVE)
-6. Verify coverage (80%+)
+## What to Test
 
-## Troubleshooting Test Failures
+- **Unit:** pure logic, edge cases, error paths.
+- **Integration:** code against real dependencies where practical (database, HTTP handlers, queues), using test containers or in-memory fakes when not.
+- **End-to-end:** a few critical user flows, not every permutation.
 
-1. Use **tdd-guide** agent
-2. Check test isolation
-3. Verify mocks are correct
-4. Fix implementation, not tests (unless tests are wrong)
+Aim for about 80% line coverage on changed code as a guide, but prioritize meaningful assertions on behavior over the number. Use whatever runner the project already uses.
+
+## When Tests Fail
+
+1. Read the failure. Reproduce it in isolation.
+2. Check test isolation (shared state, ordering, time, randomness, network).
+3. Fix the implementation, not the test, unless the test is wrong. If you change a test's expectation, say why.
+4. Never delete, skip, or loosen a test just to get green.
 
 ## Agent Support
 
-- **tdd-guide** - Use PROACTIVELY for new features, enforces write-tests-first
-- **e2e-runner** - Playwright E2E testing specialist
+- **tdd-guide**: drives the red, green, refactor cycle for new features and bug fixes.
+- **e2e-runner**: end-to-end tests for critical flows.
+- **implementer**: executes an approved plan test-first (used by `/ship`).

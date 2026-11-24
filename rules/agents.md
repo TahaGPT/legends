@@ -2,7 +2,7 @@
 
 ## Available Agents
 
-Located in `~/.claude/agents/`:
+Provided by the plugin (or copied to `~/.claude/agents/` for a manual install):
 
 | Agent | Purpose | When to Use |
 |-------|---------|-------------|

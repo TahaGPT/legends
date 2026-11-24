@@ -1,5 +1,7 @@
 # Development Context
 
+> Load for a development-focused session: `claude --append-system-prompt "$(cat contexts/dev.md)"` (or paste it into a project CLAUDE.md).
+
 Mode: Active development
 Focus: Implementation, coding, building features
 

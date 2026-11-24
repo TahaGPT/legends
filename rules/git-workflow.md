@@ -1,45 +1,36 @@
 # Git Workflow
 
-## Commit Message Format
+## Commits
+
+Conventional Commits:
 
 ```
 <type>: <description>
 
-<optional body>
+<optional body: why, not what>
 ```
 
 Types: feat, fix, refactor, docs, test, chore, perf, ci
 
-Note: Attribution disabled globally via ~/.claude/settings.json.
+- Small, focused commits that each leave the build green.
+- Never commit secrets, generated artifacts, or local config (`.env`, `settings.local.json`).
+- Follow the project's own commit and attribution conventions if it has them.
 
-## Pull Request Workflow
+## Branches and Pull Requests
 
-When creating PRs:
-1. Analyze full commit history (not just latest commit)
-2. Use `git diff [base-branch]...HEAD` to see all changes
-3. Draft comprehensive PR summary
-4. Include test plan with TODOs
-5. Push with `-u` flag if new branch
+- Work on a branch. Don't commit directly to the default branch.
+- Before opening a PR, review the whole change: `git log <base>..HEAD` and `git diff <base>...HEAD`, not just the last commit.
+- PR description: what changed and why, how it was tested, and a test plan for the reviewer.
+- Push a new branch with `git push -u origin <branch>`.
+- Only push, open PRs, or force-push when the user asks.
 
-## Feature Implementation Workflow
+## Feature Workflow
 
-1. **Plan First**
-   - Use **planner** agent to create implementation plan
-   - Identify dependencies and risks
-   - Break down into phases
+For a feature from idea to PR, use `/ship`, which runs the stages below with approval gates. Done by hand:
 
-2. **TDD Approach**
-   - Use **tdd-guide** agent
-   - Write tests first (RED)
-   - Implement to pass tests (GREEN)
-   - Refactor (IMPROVE)
-   - Verify 80%+ coverage
-
-3. **Code Review**
-   - Use **code-reviewer** agent immediately after writing code
-   - Address CRITICAL and HIGH issues
-   - Fix MEDIUM issues when possible
-
-4. **Commit & Push**
-   - Detailed commit messages
-   - Follow conventional commits format
+1. **Understand:** use the **explorer** agent on the relevant code.
+2. **Plan:** use the **planner** agent (plus **architect**, **database-architect**, or **api-designer** as needed). Get the plan approved.
+3. **Implement test-first:** use the **implementer** or **tdd-guide** agent.
+4. **Review:** use **code-reviewer**, plus **security-reviewer** for authentication, input handling, secrets, or payments. Fix CRITICAL and HIGH findings.
+5. **Verify:** run `/verify` for build, types, lint, tests, and a diff review.
+6. **Commit and open a PR.** Use `/release` when it is time to cut a version.
