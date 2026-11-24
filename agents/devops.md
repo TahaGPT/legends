@@ -50,17 +50,17 @@ Verify with `docker build` locally, and with `docker run` + a health check if fe
 ### 3. CI pipelines (GitHub Actions by default, or whatever the repo uses)
 A standard pipeline runs on PRs and on pushes to the default branch:
 
-| Job | Rust | Node/TS |
-|-----|------|---------|
-| Format | `cargo fmt --all -- --check` | `prettier --check` |
-| Lint | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | `eslint` |
-| Types/build | `cargo check --workspace --all-targets --locked` | `tsc --noEmit`, build |
-| Test | `cargo nextest run --workspace` + `cargo test --doc` | unit + integration |
-| Security | `cargo audit`, `cargo deny check` | `npm audit --audit-level=high` |
-| E2E | (if applicable) | Playwright, artifacts on failure |
+| Job | Rust | Node/TS | Python |
+|-----|------|---------|--------|
+| Format | `cargo fmt --all -- --check` | `prettier --check` | `ruff format --check .` |
+| Lint | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | `eslint` | `ruff check .` |
+| Types/build | `cargo check --workspace --all-targets --locked` | `tsc --noEmit`, build | `mypy` / `pyright` |
+| Test | `cargo nextest run --workspace` + `cargo test --doc` | unit + integration | `pytest --cov` |
+| Security | `cargo audit`, `cargo deny check` | `npm audit --audit-level=high` | `pip-audit` (+ `bandit`) |
+| E2E | (if applicable) | Playwright, artifacts on failure | (if applicable) |
 
 Pipeline standards:
-- Caching: `Swatinem/rust-cache` for Rust; `actions/setup-node` with `cache:` for Node.
+- Caching: `Swatinem/rust-cache` for Rust; `actions/setup-node` with `cache:` for Node; `astral-sh/setup-uv` with caching (or `actions/setup-python` with `cache: pip`) for Python.
 - `concurrency:` groups that cancel superseded runs on the same PR.
 - Least-privilege `permissions:` at the workflow level (`contents: read` by default).
 - Matrix only where it adds value (supported OS/toolchain versions), not by default.

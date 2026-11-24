@@ -9,6 +9,8 @@ Run comprehensive verification on current codebase state.
 
 ## Instructions
 
+**Python projects (`pyproject.toml`, `setup.py`, or `requirements*.txt`):** use the commands from the `python-patterns` skill: format = `ruff format --check .`, lint = `ruff check .`, types = `mypy .` or `pyright` (whichever the project configures), tests = `pytest` with `--cov` for coverage, security = `pip-audit` (+ `bandit` if configured), debug-statement audit = `print()`/`breakpoint()`/bare `except:` instead of console.log. Prefix commands with `uv run` / `poetry run` / `pdm run` to match the project's lockfile.
+
 **Rust projects (a `Cargo.toml` exists):** use the cargo commands from the `rust-patterns` skill for each step:
 build/types = `cargo check --workspace --all-targets --all-features`,
 lint = `cargo fmt --all -- --check` + `cargo clippy --workspace --all-targets --all-features -- -D warnings`,

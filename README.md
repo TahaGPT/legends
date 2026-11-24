@@ -119,6 +119,8 @@ legends/
 |   |-- strategic-compact/          # Manual compaction suggestions (Longform Guide)
 |   |-- tdd-workflow/               # TDD methodology
 |   |-- rust-patterns/              # Rust idioms, async, testing, security
+|   |-- python-patterns/            # Python tooling, typing, async, testing, security
+|   |-- llm-integration/            # Production LLM features: structured output, tools, cost, injection defense
 |   |-- security-review/            # Security checklist
 |   |-- eval-harness/               # Verification loop evaluation (Longform Guide)
 |   |-- verification-loop/          # Continuous verification (Longform Guide)
@@ -313,7 +315,7 @@ spec → explore → design (architect / database-architect / api-designer, as n
 
 ### Language support
 
-The agents detect the stack from the project's manifests. TypeScript/JavaScript is covered by the original skills. Rust is covered by the `rust-patterns` skill and the `rust-build-resolver` agent: `/verify`, `/build-fix`, and `verification-loop` switch to cargo commands when a `Cargo.toml` is present. Project conventions in your `CLAUDE.md` and CI config always take precedence over the defaults in this collection.
+The agents detect the stack from the project's manifests. TypeScript/JavaScript is covered by the original skills. Rust is covered by the `rust-patterns` skill and the `rust-build-resolver` agent: `/verify`, `/build-fix`, and `verification-loop` switch to cargo commands when a `Cargo.toml` is present. Python is covered by the `python-patterns` skill, and those commands switch to ruff, mypy/pyright, pytest, and pip-audit when a `pyproject.toml`, `setup.py`, or requirements file is present. Features that call LLM APIs use the `llm-integration` skill (structured output, tool safety, retries, prompt caching, cost tracking, prompt-injection defense, evals). Project conventions in your `CLAUDE.md` and CI config always take precedence over the defaults in this collection.
 
 ---
 
@@ -408,7 +410,7 @@ Please contribute! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ### Ideas for Contributions
 
-- Language-specific skills (Python, Go)
+- Language-specific skills (Go, Java, Ruby)
 - Framework-specific configs (Django, Rails, Laravel)
 - Cloud-specific DevOps guidance (Kubernetes, Terraform, AWS)
 - Testing strategies (different frameworks)
@@ -420,7 +422,7 @@ Please contribute! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 LEGENDS is a fork of [everything-claude-code](https://github.com/affaan-m/everything-claude-code) by [Affaan Mustafa](https://x.com/affaanmustafa), released under the MIT License. The original agents, skills, hooks, rules, and guides come from that project.
 
-LEGENDS adds the end-to-end pipeline (`/ship`, `/release`), the `explorer`, `implementer`, `database-architect`, `api-designer`, `devops`, `release-manager`, and `rust-build-resolver` agents, the `rust-patterns` skill, and project-agnostic versions of the original agents.
+LEGENDS adds the end-to-end pipeline (`/ship`, `/release`), the `explorer`, `implementer`, `database-architect`, `api-designer`, `devops`, `release-manager`, and `rust-build-resolver` agents, the `rust-patterns`, `python-patterns`, and `llm-integration` skills, and project-agnostic versions of the original agents.
 
 ---
 

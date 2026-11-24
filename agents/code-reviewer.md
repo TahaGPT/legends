@@ -31,7 +31,7 @@ Then find out what the change is **supposed** to do, in this order of preference
 3. Commit messages
 4. If none exist, infer the intent from the diff and state your inference at the top of the report
 
-Read `CLAUDE.md`, and load the skill for the stack: `rust-patterns` (Cargo.toml), `frontend-patterns` / `backend-patterns` (TS/JS), `coding-standards`. Project conventions override generic advice.
+Read `CLAUDE.md`, and load the skill for the stack: `rust-patterns` (Cargo.toml), `python-patterns` (pyproject.toml / requirements), `llm-integration` (code that calls LLM APIs), `frontend-patterns` / `backend-patterns` (TS/JS), `coding-standards`. Project conventions override generic advice.
 
 ## Step 2: Read in Context
 

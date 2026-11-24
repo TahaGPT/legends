@@ -19,7 +19,7 @@ You find vulnerabilities before they reach production. You think like an attacke
 
 ## Step 1: Context and Threat Model
 
-1. Read `CLAUDE.md` and any security docs or project skill for domain requirements. Load `security-review` (general checklist) and `rust-patterns` for Rust code.
+1. Read `CLAUDE.md` and any security docs or project skill for domain requirements. Load `security-review` (general checklist), plus `rust-patterns` for Rust, `python-patterns` for Python, and `llm-integration` for code that calls LLM APIs or exposes tools to a model.
 2. Identify the stack, the framework's built-in protections (auto-escaping, ORM parameterization, CSRF middleware), and what auth mechanism is in use.
 3. Write a brief threat model for the change:
    - **Assets:** what's worth protecting (user data, credentials, money, PII, model access, infrastructure)
@@ -61,7 +61,7 @@ For each entry point touched by the change, trace the data forward to every sink
 | **Crypto** | Home-made crypto, ECB mode, static IVs/nonces, `Math.random()` / non-CSPRNG for tokens, non-constant-time comparison of secrets or signatures |
 | **Concurrency / business logic** | Check-then-act on balances, quotas, or inventory without a transaction or lock; replayable operations without idempotency keys; negative quantities; skipping workflow steps |
 | **Resource exhaustion** | Missing rate limits on auth, expensive, or paid endpoints; unbounded body size, pagination, regex (ReDoS), or recursion; no timeouts on outbound calls |
-| **LLM / AI features** | Prompt injection: untrusted content (user input, retrieved documents, web pages, tool results) able to override instructions or trigger tools; model output passed to shell, SQL, file paths, HTML, or `eval` without validation; tools with more privilege than the user; secrets or PII sent to model providers; missing output schema validation; unbounded token spend per request |
+| **LLM / AI features** (see `llm-integration` skill) | Prompt injection: untrusted content (user input, retrieved documents, web pages, tool results) able to override instructions or trigger tools; model output passed to shell, SQL, file paths, HTML, or `eval` without validation; tools with more privilege than the user; secrets or PII sent to model providers; missing output schema validation; unbounded token spend per request |
 | **Infrastructure in the diff** | Dockerfiles running as root, secrets in images or CI logs, overly broad CI `permissions`, public buckets, debug mode enabled in production config |
 | **Dependencies** | Known CVEs (from scans) that are actually reachable from the code; typosquatted or abandoned new packages; unpinned versions in security-critical paths |
 
