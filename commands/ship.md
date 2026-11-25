@@ -32,7 +32,7 @@ Keep run state in `.claude/ship/<slug>/state.json` (slug = short kebab-case from
 }
 ```
 
-Update it at the end of every stage. Make sure `.claude/ship/` is in `.gitignore` (add it if missing). Handoffs live in this JSON file, not separate markdown files, because the plugin's hooks block stray `.md` files.
+Update it at the end of every stage. Make sure `.claude/ship/` is in `.gitignore` (add it if missing). Handoffs live in this JSON file, not separate markdown files, so a run doesn't scatter documents through the repo (and keeps working when the optional `block-md` hook is enabled).
 
 ## Pipeline
 
@@ -84,15 +84,18 @@ If the build or tests are broken and the implementer can't fix them, use `rust-b
 ### Stage 5: Review → `code-reviewer` + `security-reviewer` (in parallel)
 Launch both in a **single message** so they run concurrently. Give each the diff scope (`git diff <default-branch>...HEAD`), the spec, and the implementer handoff (especially "Areas Needing Careful Review"). For Rust, tell them to apply the `rust-patterns` review checklist.
 
-Merge the findings into one list, de-duplicated and ranked CRITICAL > HIGH > MEDIUM > LOW.
+Both reviewers are read-only and label every finding `CONFIRMED` or `PLAUSIBLE`. Merge the findings into one list, de-duplicated and ranked CRITICAL > HIGH > MEDIUM > LOW, with CONFIRMED before PLAUSIBLE. The code-reviewer also checks each acceptance criterion; an unmet criterion counts as HIGH.
 
 ### Stage 6: Fix Loop → `implementer` (fix-loop mode)
-- If there are any CRITICAL or HIGH findings, send them to the implementer, then re-run Stage 5 **only for the reviewer(s) that raised them**.
+- If there are any CRITICAL or HIGH findings, send them to the implementer with each finding's evidence, failure scenario, and suggested test, then re-run Stage 5 **only for the reviewer(s) that raised them**.
+- `PLAUSIBLE` CRITICAL/HIGH findings go to the implementer too, which either fixes them or refutes them with evidence (a test, or a trace). A refuted finding is closed only when the reviewer that raised it accepts the evidence on the re-run.
 - **At most 2 fix loops.** If CRITICAL/HIGH findings remain after that, stop and present them to the user with the options.
 - MEDIUM/LOW findings the implementer deferred go into the final report.
 
-### Stage 7: E2E → `e2e-runner` (conditional)
-Run only if user-facing flows changed (pages, components, routes, CLI UX) and `--no-e2e` wasn't given. Cover the acceptance criteria that describe user-visible behavior. Failures go back through Stage 6 (they count toward the same 2-loop limit).
+### Stage 7: UI + E2E → `ui-designer`, then `e2e-runner` (conditional)
+If web UI changed (pages, components, styles), first run `ui-designer` on the changed screens: accessibility (WCAG 2.2 AA), responsive layout, loading/empty/error states, design-token consistency. Its fixes are code changes, so run the test suite afterwards.
+
+Then run `e2e-runner` only if user-facing flows changed (pages, components, routes, CLI UX) and `--no-e2e` wasn't given. Cover the acceptance criteria that describe user-visible behavior. Failures go back through Stage 6 (they count toward the same 2-loop limit).
 
 ### Stage 8: Verify (you, via the `verification-loop` skill)
 Run the full verification with the project's CI flags: build, types, lint, all tests, security scan, debug-statement audit. It uses cargo commands for Rust projects. Every acceptance criterion from Stage 1 must have a passing test; list the mapping.
@@ -125,7 +128,7 @@ Acceptance criteria
 
 Pipeline
   spec ✓  explore ✓  design: arch –|✓ db –|✓ api –|✓  plan ✓ (approved)  implement ✓
-  review: code ✓ security ✓ (fix loops: 1)  e2e ✓|skipped  verify ✓  docs ✓|skipped  infra ✓|skipped
+  review: code ✓ security ✓ (fix loops: 1)  ui ✓|skipped  e2e ✓|skipped  verify ✓  docs ✓|skipped  infra ✓|skipped
 
 Verification
   build OK | types OK | lint OK | tests 214/214 | security OK

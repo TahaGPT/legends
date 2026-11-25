@@ -1,3 +1,7 @@
+---
+description: Measure test coverage, find files below the threshold (default 80%), and generate the missing tests.
+---
+
 # Test Coverage
 
 Analyze test coverage and generate missing tests:

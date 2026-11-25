@@ -1,6 +1,7 @@
 # LEGENDS
 
 [![Stars](https://img.shields.io/github/stars/TahaGPT/legends?style=flat)](https://github.com/TahaGPT/legends/stargazers)
+[![Tests](https://github.com/TahaGPT/legends/actions/workflows/test.yml/badge.svg)](https://github.com/TahaGPT/legends/actions/workflows/test.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Shell](https://img.shields.io/badge/-Shell-4EAA25?logo=gnu-bash&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/-TypeScript-3178C6?logo=typescript&logoColor=white)
@@ -40,8 +41,8 @@ The original author's guides explain the foundations this toolkit builds on (set
 | Topic | What You'll Learn |
 |-------|-------------------|
 | Token Optimization | Model selection, system prompt slimming, background processes |
-| Memory Persistence | Hooks that save/load context across sessions automatically |
-| Continuous Learning | Auto-extract patterns from sessions into reusable skills |
+| Memory Persistence | Each session leaves a record; the next session in the same project starts knowing where you left off |
+| Continuous Learning | Long sessions are flagged for `/learn`, which turns patterns into reusable skills |
 | Verification Loops | Checkpoint vs continuous evals, grader types, pass@k metrics |
 | Parallelization | Git worktrees, cascade method, when to scale instances |
 | Subagent Orchestration | The context problem, iterative retrieval pattern |
@@ -97,8 +98,8 @@ legends/
 |   |-- planner.md           # Feature implementation planning
 |   |-- architect.md         # System design decisions
 |   |-- tdd-guide.md         # Test-driven development
-|   |-- code-reviewer.md     # Quality and security review
-|   |-- security-reviewer.md # Vulnerability analysis
+|   |-- code-reviewer.md     # Verified correctness/design review (read-only)
+|   |-- security-reviewer.md # Threat model + exploitability review (read-only)
 |   |-- build-error-resolver.md
 |   |-- rust-build-resolver.md
 |   |-- explorer.md
@@ -108,6 +109,9 @@ legends/
 |   |-- api-designer.md      # Contract-first API and interface design
 |   |-- devops.md            # CI/CD, Docker, env config, deployments
 |   |-- release-manager.md   # Versioning, changelog, tags, releases
+|   |-- performance-profiler.md # Measure-first performance work
+|   |-- dependency-auditor.md # Vulnerabilities, licenses, upgrade plans
+|   |-- ui-designer.md       # Accessibility, responsive layout, UI states
 |   |-- refactor-cleaner.md  # Dead code cleanup
 |   |-- doc-updater.md       # Documentation sync
 |
@@ -119,6 +123,9 @@ legends/
 |   |-- strategic-compact/          # Manual compaction suggestions (Longform Guide)
 |   |-- tdd-workflow/               # TDD methodology
 |   |-- rust-patterns/              # Rust idioms, async, testing, security
+|   |-- python-patterns/            # Python tooling, typing, async, testing, security
+|   |-- llm-integration/            # Production LLM features: structured output, tools, cost, injection defense
+|   |-- observability/              # Logging, metrics, tracing, health checks, SLOs, alerts
 |   |-- security-review/            # Security checklist
 |   |-- eval-harness/               # Verification loop evaluation (Longform Guide)
 |   |-- verification-loop/          # Continuous verification (Longform Guide)
@@ -138,28 +145,30 @@ legends/
 |   |-- setup-pm.md         # /setup-pm - Configure package manager (NEW)
 |
 |-- rules/            # Always-follow guidelines (copy to ~/.claude/rules/)
-|   |-- security.md         # Mandatory security checks
-|   |-- coding-style.md     # Immutability, file organization
-|   |-- testing.md          # TDD, 80% coverage requirement
-|   |-- git-workflow.md     # Commit format, PR process
-|   |-- agents.md           # When to delegate to subagents
-|   |-- performance.md      # Model selection, context management
+|   |-- security.md         # Pre-commit security checklist, secrets
+|   |-- coding-style.md     # Language-neutral style defaults (defers to language skills)
+|   |-- testing.md          # Test-first workflow, what to test
+|   |-- git-workflow.md     # Commits, PRs, feature workflow
+|   |-- agents.md           # Which agent to use when
+|   |-- patterns.md         # API responses, data access, configuration
+|   |-- performance.md      # Model tiers, context management
+|   |-- hooks.md            # What the hooks do, how to opt in
 |
 |-- hooks/            # Trigger-based automations
-|   |-- hooks.json                # All hooks config (PreToolUse, PostToolUse, Stop, etc.)
-|   |-- memory-persistence/       # Session lifecycle hooks (Longform Guide)
-|   |-- strategic-compact/        # Compaction suggestions (Longform Guide)
+|   |-- hooks.json                # All hooks config (PreToolUse, PostToolUse, Stop, Session*, PreCompact)
 |
 |-- scripts/          # Cross-platform Node.js scripts (NEW)
 |   |-- lib/                     # Shared utilities
 |   |   |-- utils.js             # Cross-platform file/path/system utilities
 |   |   |-- package-manager.js   # Package manager detection and selection
+|   |   |-- session-store.js     # Per-session records used by the session hooks
 |   |-- hooks/                   # Hook implementations
-|   |   |-- session-start.js     # Load context on session start
-|   |   |-- session-end.js       # Save state on session end
-|   |   |-- pre-compact.js       # Pre-compaction state saving
+|   |   |-- session-start.js     # Tell Claude where the last session in this project left off
+|   |   |-- session-end.js       # Write the session record (and learning-review hint)
+|   |   |-- pre-compact.js       # Log compaction events
 |   |   |-- suggest-compact.js   # Strategic compaction suggestions
-|   |   |-- evaluate-session.js  # Extract patterns from sessions
+|   |   |-- evaluate-session.js  # Decide if a session is worth /learn
+|   |   |-- optional-hooks.js    # Opt-in hooks (LEGENDS_HOOKS) and the PR hint
 |   |-- setup-package-manager.js # Interactive PM setup
 |
 |-- tests/            # Test suite (NEW)
@@ -167,17 +176,19 @@ legends/
 |   |-- hooks/                   # Hook tests
 |   |-- run-all.js               # Run all tests
 |
-|-- contexts/         # Dynamic system prompt injection contexts (Longform Guide)
+|-- contexts/         # Mode prompts for --append-system-prompt
 |   |-- dev.md              # Development mode context
 |   |-- review.md           # Code review mode context
 |   |-- research.md         # Research/exploration mode context
 |
 |-- examples/         # Example configurations and sessions
-|   |-- CLAUDE.md           # Example project-level config
-|   |-- user-CLAUDE.md      # Example user-level config
+|   |-- CLAUDE.md           # Project-level CLAUDE.md template
+|   |-- user-CLAUDE.md      # User-level CLAUDE.md template
+|   |-- statusline.json     # Example status line
+|   |-- sessions/           # Example session record
 |
 |-- mcp-configs/      # MCP server configurations
-|   |-- mcp-servers.json    # GitHub, Supabase, Vercel, Railway, etc.
+|   |-- mcp-servers.json    # MCP server catalog (copy what you need)
 |
 |-- marketplace.json  # Self-hosted marketplace config (for /plugin marketplace add)
 ```
@@ -247,9 +258,9 @@ Copy the hooks from `hooks/hooks.json` to your `~/.claude/settings.json`.
 
 #### Configure MCPs
 
-Copy desired MCP servers from `mcp-configs/mcp-servers.json` to your `~/.claude.json`.
+`mcp-configs/mcp-servers.json` is a catalog, not a default. Add only the servers you need, either with `claude mcp add ...` or by copying entries into `~/.claude.json` (user) or `.mcp.json` (project). A good starter set is github, context7 and sequential-thinking.
 
-**Important:** Replace `YOUR_*_HERE` placeholders with your actual API keys.
+**Important:** Replace `YOUR_*_HERE` placeholders with your own keys, and never commit real tokens.
 
 ---
 
@@ -310,10 +321,13 @@ spec → explore → design (architect / database-architect / api-designer, as n
 | Docs and codemaps | `doc-updater` |
 | CI, Docker, env config, deployments | `devops` |
 | Versioning, changelog, tags, releases | `/release` → `release-manager` |
+| Slow code, latency or memory targets | `performance-profiler` |
+| Vulnerable, outdated, or risky dependencies; upgrade plans | `dependency-auditor` |
+| Accessibility, responsive layout, UI states | `ui-designer` |
 
 ### Language support
 
-The agents detect the stack from the project's manifests. TypeScript/JavaScript is covered by the original skills. Rust is covered by the `rust-patterns` skill and the `rust-build-resolver` agent: `/verify`, `/build-fix`, and `verification-loop` switch to cargo commands when a `Cargo.toml` is present. Project conventions in your `CLAUDE.md` and CI config always take precedence over the defaults in this collection.
+The agents detect the stack from the project's manifests. TypeScript/JavaScript is covered by the original skills. Rust is covered by the `rust-patterns` skill and the `rust-build-resolver` agent: `/verify`, `/build-fix`, and `verification-loop` switch to cargo commands when a `Cargo.toml` is present. Python is covered by the `python-patterns` skill, and those commands switch to ruff, mypy/pyright, pytest, and pip-audit when a `pyproject.toml`, `setup.py`, or requirements file is present. Features that call LLM APIs use the `llm-integration` skill (structured output, tool safety, retries, prompt caching, cost tracking, prompt-injection defense, evals). Project conventions in your `CLAUDE.md` and CI config always take precedence over the defaults in this collection.
 
 ---
 
@@ -350,17 +364,27 @@ Skills are workflow definitions invoked by commands or agents:
 
 ### Hooks
 
-Hooks fire on tool events. Example - warn about console.log:
+Hooks fire on tool and session events. The matcher is a pattern over **tool names**; the hook receives the event as JSON on stdin, and a PreToolUse hook blocks the call by exiting with code 2:
 
 ```json
 {
-  "matcher": "tool == \"Edit\" && tool_input.file_path matches \"\\\\.(ts|tsx|js|jsx)$\"",
+  "matcher": "Edit|Write|MultiEdit",
   "hooks": [{
     "type": "command",
-    "command": "#!/bin/bash\ngrep -n 'console\\.log' \"$file_path\" && echo '[Hook] Remove console.log' >&2"
+    "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/optional-hooks.js\" post-edit"
   }]
 }
 ```
+
+**What's on by default:** session memory (a per-project record of where you left off), learning-review hints, compaction suggestions, and a PR review hint after `gh pr create`. Non-blocking messages are emitted as JSON so Claude actually sees them (Claude never sees stderr from a hook that exits 0).
+
+**Opt-in** (off unless you enable them) with the `LEGENDS_HOOKS` environment variable in `~/.claude/settings.json`:
+
+```json
+{ "env": { "LEGENDS_HOOKS": "tmux,prettier,console-log" } }
+```
+
+Flags: `tmux` (block dev servers outside tmux), `push-reminder`, `block-md` (block stray .md/.txt files), `prettier` (format edited JS/TS), `typecheck` (tsc after TS edits), `console-log` (warn about console.log), or `all`. See `rules/hooks.md`.
 
 ### Rules
 
@@ -387,7 +411,12 @@ node tests/run-all.js
 node tests/lib/utils.test.js
 node tests/lib/package-manager.test.js
 node tests/hooks/hooks.test.js
+node tests/plugin/structure.test.js
 ```
+
+`tests/plugin/structure.test.js` validates the plugin itself: frontmatter on every agent, skill, and command; valid tool and model names; reviewer agents staying read-only; every agent and skill referenced by a command existing; manifests; and hook script paths. Run it after adding or renaming any agent, skill, or command.
+
+CI (`.github/workflows/test.yml`) runs the structure checks and then the full suite on every pull request and push to `main`, on Linux, macOS, and Windows (Node 22, plus Node 24 on Linux). The suite needs no `npm install`; it uses only Node's built-in modules.
 
 ---
 
@@ -405,7 +434,7 @@ Please contribute! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ### Ideas for Contributions
 
-- Language-specific skills (Python, Go)
+- Language-specific skills (Go, Java, Ruby)
 - Framework-specific configs (Django, Rails, Laravel)
 - Cloud-specific DevOps guidance (Kubernetes, Terraform, AWS)
 - Testing strategies (different frameworks)
@@ -417,7 +446,7 @@ Please contribute! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 LEGENDS is a fork of [everything-claude-code](https://github.com/affaan-m/everything-claude-code) by [Affaan Mustafa](https://x.com/affaanmustafa), released under the MIT License. The original agents, skills, hooks, rules, and guides come from that project.
 
-LEGENDS adds the end-to-end pipeline (`/ship`, `/release`), the `explorer`, `implementer`, `database-architect`, `api-designer`, `devops`, `release-manager`, and `rust-build-resolver` agents, the `rust-patterns` skill, and project-agnostic versions of the original agents.
+LEGENDS adds the end-to-end pipeline (`/ship`, `/release`), the `explorer`, `implementer`, `database-architect`, `api-designer`, `devops`, `release-manager`, `rust-build-resolver`, `performance-profiler`, `dependency-auditor`, and `ui-designer` agents, the `rust-patterns`, `python-patterns`, `llm-integration`, and `observability` skills, and project-agnostic versions of the original agents.
 
 ---
 

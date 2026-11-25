@@ -334,58 +334,33 @@ catch (error) {
 - [ ] Detailed errors only in server logs
 - [ ] No stack traces exposed to users
 
-### 9. Blockchain Security (Solana)
+### 9. Signed Requests and Webhooks
 
-#### Wallet Verification
+#### Signature Verification
 ```typescript
-import { verify } from '@solana/web3.js'
+import { createHmac, timingSafeEqual } from 'crypto'
 
-async function verifyWalletOwnership(
-  publicKey: string,
-  signature: string,
-  message: string
-) {
-  try {
-    const isValid = verify(
-      Buffer.from(message),
-      Buffer.from(signature, 'base64'),
-      Buffer.from(publicKey, 'base64')
-    )
-    return isValid
-  } catch (error) {
-    return false
-  }
-}
-```
+function verifyWebhook(rawBody: Buffer, signatureHeader: string, timestamp: string, secret: string): boolean {
+  // Reject stale requests to prevent replay (5-minute tolerance)
+  const ageSeconds = Math.abs(Date.now() / 1000 - Number(timestamp))
+  if (!Number.isFinite(ageSeconds) || ageSeconds > 300) return false
 
-#### Transaction Verification
-```typescript
-async function verifyTransaction(transaction: Transaction) {
-  // Verify recipient
-  if (transaction.to !== expectedRecipient) {
-    throw new Error('Invalid recipient')
-  }
+  const expected = createHmac('sha256', secret)
+    .update(`${timestamp}.${rawBody.toString('utf8')}`)
+    .digest()
+  const received = Buffer.from(signatureHeader, 'hex')
 
-  // Verify amount
-  if (transaction.amount > maxAmount) {
-    throw new Error('Amount exceeds limit')
-  }
-
-  // Verify user has sufficient balance
-  const balance = await getBalance(transaction.from)
-  if (balance < transaction.amount) {
-    throw new Error('Insufficient balance')
-  }
-
-  return true
+  // Constant-time comparison; length check first because timingSafeEqual throws on mismatch
+  return received.length === expected.length && timingSafeEqual(received, expected)
 }
 ```
 
 #### Verification Steps
-- [ ] Wallet signatures verified
-- [ ] Transaction details validated
-- [ ] Balance checks before transactions
-- [ ] No blind transaction signing
+- [ ] Signature computed over the **raw** request body (before JSON parsing)
+- [ ] Constant-time comparison (`timingSafeEqual`, `hmac.compare_digest`, `subtle::ConstantTimeEq`)
+- [ ] Timestamp tolerance and/or nonce store to prevent replay
+- [ ] Webhook secrets rotated and stored in a secret manager, never in code
+- [ ] Event processing is idempotent (dedupe by event ID)
 
 ### 10. Dependency Security
 
@@ -480,7 +455,7 @@ Before ANY production deployment:
 - [ ] **Row Level Security**: Enabled in Supabase
 - [ ] **CORS**: Properly configured
 - [ ] **File Uploads**: Validated (size, type)
-- [ ] **Wallet Signatures**: Verified (if blockchain)
+- [ ] **Account Signatures**: Verified (if blockchain)
 
 ## Resources
 

@@ -1,100 +1,54 @@
 # Example Project CLAUDE.md
 
-This is an example project-level CLAUDE.md file. Place this in your project root.
+A template for a project-level `CLAUDE.md` in your repository root. Replace the bracketed parts and delete what doesn't apply. Keep it short: Claude reads it every session, so every line should be something Claude would otherwise get wrong.
 
 ## Project Overview
 
-[Brief description of your project - what it does, tech stack]
+[One paragraph: what the project does, who uses it, and the main tech stack.]
 
-## Critical Rules
+## Commands
 
-### 1. Code Organization
-
-- Many small files over few large files
-- High cohesion, low coupling
-- 200-400 lines typical, 800 max per file
-- Organize by feature/domain, not by type
-
-### 2. Code Style
-
-- No emojis in code, comments, or documentation
-- Immutability always - never mutate objects or arrays
-- No console.log in production code
-- Proper error handling with try/catch
-- Input validation with Zod or similar
-
-### 3. Testing
-
-- TDD: Write tests first
-- 80% minimum coverage
-- Unit tests for utilities
-- Integration tests for APIs
-- E2E tests for critical flows
-
-### 4. Security
-
-- No hardcoded secrets
-- Environment variables for sensitive data
-- Validate all user inputs
-- Parameterized queries only
-- CSRF protection enabled
-
-## File Structure
-
-```
-src/
-|-- app/              # Next.js app router
-|-- components/       # Reusable UI components
-|-- hooks/            # Custom React hooks
-|-- lib/              # Utility libraries
-|-- types/            # TypeScript definitions
+```bash
+[install]      # e.g. pnpm install / uv sync / cargo build
+[dev]          # e.g. pnpm dev
+[test]         # e.g. pnpm test / pytest / cargo test
+[lint/format]  # e.g. pnpm lint / ruff check . && ruff format / cargo clippy
+[typecheck]    # e.g. pnpm tsc --noEmit / mypy .
 ```
 
-## Key Patterns
+## Layout
 
-### API Response Format
-
-```typescript
-interface ApiResponse<T> {
-  success: boolean
-  data?: T
-  error?: string
-}
+```
+[src/]          # [what lives here]
+[tests/]        # [test layout and naming]
+[migrations/]   # [how migrations are created and applied]
 ```
 
-### Error Handling
+## Conventions
 
-```typescript
-try {
-  const result = await operation()
-  return { success: true, data: result }
-} catch (error) {
-  console.error('Operation failed:', error)
-  return { success: false, error: 'User-friendly message' }
-}
-```
+These examples come from the plugin's `rules/`; keep the ones you agree with and add your own.
+
+- Small, focused files organized by feature; follow the existing structure.
+- Validate untrusted input at the boundary with [zod / pydantic / serde].
+- Errors: [your error-handling convention, e.g. typed result objects, or exceptions mapped to HTTP codes in one place].
+- Tests: test-first for new behavior and bug fixes; [unit / integration / e2e expectations].
+- No secrets in code; configuration comes from environment variables (see below).
+- [Anything Claude keeps getting wrong in this codebase.]
 
 ## Environment Variables
 
 ```bash
 # Required
 DATABASE_URL=
-API_KEY=
+[API_KEY]=
 
 # Optional
-DEBUG=false
+LOG_LEVEL=info
 ```
 
-## Available Commands
+## Workflow
 
-- `/tdd` - Test-driven development workflow
-- `/plan` - Create implementation plan
-- `/code-review` - Review code quality
-- `/build-fix` - Fix build errors
-
-## Git Workflow
-
-- Conventional commits: `feat:`, `fix:`, `refactor:`, `docs:`, `test:`
-- Never commit to main directly
-- PRs require review
-- All tests must pass before merge
+- Features: `/ship <description>` (spec, plan, implement test-first, review, verify, PR), or `/plan` and then `/tdd` for smaller changes.
+- Before a PR: `/verify`, then `/code-review`.
+- Releases: `/release`.
+- Conventional commits (`feat:`, `fix:`, `refactor:`, `docs:`, `test:`); work on branches, never directly on main.

@@ -1,70 +1,40 @@
 # Coding Style
 
-## Immutability (CRITICAL)
+Language-neutral defaults. The project's own conventions (its CLAUDE.md, linter, and formatter config, and the existing code) win over these. For language specifics see the `coding-standards` skill (TypeScript/JavaScript), the `python-patterns` skill, and the `rust-patterns` skill.
 
-ALWAYS create new objects, NEVER mutate:
+## Prefer Immutability
 
-```javascript
-// WRONG: Mutation
-function updateUser(user, name) {
-  user.name = name  // MUTATION!
-  return user
-}
+Return new values instead of mutating inputs, especially for shared state, function arguments, and anything crossing a module boundary. Mutation is fine when it is local and contained (a builder inside one function, a hot loop measured to need it).
 
-// CORRECT: Immutability
-function updateUser(user, name) {
-  return {
-    ...user,
-    name
-  }
-}
+```text
+WRONG:   update(user, name)  ->  sets user.name, returns user     (caller's object changed)
+CORRECT: update(user, name)  ->  returns a copy with the new name (input untouched)
 ```
 
-## File Organization
+How this looks per language: spread or copies in JS/TS, `dataclasses.replace` or frozen dataclasses in Python, ownership and `&` versus `&mut` in Rust.
 
-MANY SMALL FILES > FEW LARGE FILES:
-- High cohesion, low coupling
-- 200-400 lines typical, 800 max
-- Extract utilities from large components
-- Organize by feature/domain, not by type
+## File and Function Size
+
+- Many small, cohesive files over a few large ones. Organize by feature or domain, not by type.
+- Rough guide: functions under about 50 lines, files under about 400. Over about 800 lines is a strong signal to split.
+- Nesting deeper than 4 levels: extract a function or return early.
+
+These are heuristics, not hard limits. Generated code, tables, and tests can be longer.
 
 ## Error Handling
 
-ALWAYS handle errors comprehensively:
+- Handle errors where you can do something useful. Otherwise let them propagate with context added.
+- Never swallow errors silently. Never show stack traces or internals to end users.
+- Log with enough context to debug (operation, identifiers), without secrets or personal data.
 
-```typescript
-try {
-  const result = await riskyOperation()
-  return result
-} catch (error) {
-  console.error('Operation failed:', error)
-  throw new Error('Detailed user-friendly message')
-}
-```
+## Validate at the Boundaries
 
-## Input Validation
+Validate and parse untrusted input where it enters the system: request handlers, CLI args, file and env parsing, message consumers. Use a schema library (zod, pydantic, serde plus validator, etc.), then trust the typed value internally.
 
-ALWAYS validate user input:
+## Before Marking Work Complete
 
-```typescript
-import { z } from 'zod'
-
-const schema = z.object({
-  email: z.string().email(),
-  age: z.number().int().min(0).max(150)
-})
-
-const validated = schema.parse(input)
-```
-
-## Code Quality Checklist
-
-Before marking work complete:
-- [ ] Code is readable and well-named
-- [ ] Functions are small (<50 lines)
-- [ ] Files are focused (<800 lines)
-- [ ] No deep nesting (>4 levels)
-- [ ] Proper error handling
-- [ ] No console.log statements
-- [ ] No hardcoded values
-- [ ] No mutation (immutable patterns used)
+- [ ] Names say what things are; no dead or commented-out code
+- [ ] Errors handled or propagated with context
+- [ ] No debug output left behind (console.log, print, dbg!, and similar)
+- [ ] No hardcoded secrets, environment-specific URLs, or magic numbers without a named constant
+- [ ] Matches the surrounding code's style; formatter and linter pass

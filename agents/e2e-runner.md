@@ -2,7 +2,7 @@
 name: e2e-runner
 description: End-to-end testing specialist using Playwright. Use PROACTIVELY for generating, maintaining, and running E2E tests. Manages test journeys, quarantines flaky tests, uploads artifacts (screenshots, videos, traces), and ensures critical user flows work.
 tools: Read, Write, Edit, Bash, Grep, Glob
-model: opus
+model: sonnet
 ---
 
 # E2E Test Runner
@@ -32,7 +32,7 @@ You are an expert end-to-end testing specialist focused on Playwright test autom
 npx playwright test
 
 # Run specific test file
-npx playwright test tests/markets.spec.ts
+npx playwright test tests/products.spec.ts
 
 # Run tests in headed mode (see browser)
 npx playwright test --headed
@@ -64,7 +64,7 @@ npx playwright test --project=webkit
 ```
 a) Identify critical user journeys
    - Authentication flows (login, logout, registration)
-   - Core features (market creation, trading, searching)
+   - Core features (product creation, purchasing, searching)
    - Payment flows (deposits, withdrawals)
    - Data integrity (CRUD operations)
 
@@ -130,62 +130,62 @@ tests/
 │   │   ├── login.spec.ts
 │   │   ├── logout.spec.ts
 │   │   └── register.spec.ts
-│   ├── markets/               # Market features
+│   ├── products/               # Product features
 │   │   ├── browse.spec.ts
 │   │   ├── search.spec.ts
 │   │   ├── create.spec.ts
-│   │   └── trade.spec.ts
-│   ├── wallet/                # Wallet operations
+│   │   └── order.spec.ts
+│   ├── account/                # Account operations
 │   │   ├── connect.spec.ts
 │   │   └── transactions.spec.ts
 │   └── api/                   # API endpoint tests
-│       ├── markets-api.spec.ts
+│       ├── products-api.spec.ts
 │       └── search-api.spec.ts
 ├── fixtures/                  # Test data and helpers
 │   ├── auth.ts                # Auth fixtures
-│   ├── markets.ts             # Market test data
-│   └── wallets.ts             # Wallet fixtures
+│   ├── products.ts             # Product test data
+│   └── accounts.ts             # Account fixtures
 └── playwright.config.ts       # Playwright configuration
 ```
 
 ### Page Object Model Pattern
 
 ```typescript
-// pages/MarketsPage.ts
+// pages/ProductsPage.ts
 import { Page, Locator } from '@playwright/test'
 
-export class MarketsPage {
+export class ProductsPage {
   readonly page: Page
   readonly searchInput: Locator
-  readonly marketCards: Locator
-  readonly createMarketButton: Locator
+  readonly productCards: Locator
+  readonly createProductButton: Locator
   readonly filterDropdown: Locator
 
   constructor(page: Page) {
     this.page = page
     this.searchInput = page.locator('[data-testid="search-input"]')
-    this.marketCards = page.locator('[data-testid="market-card"]')
-    this.createMarketButton = page.locator('[data-testid="create-market-btn"]')
+    this.productCards = page.locator('[data-testid="product-card"]')
+    this.createProductButton = page.locator('[data-testid="create-product-btn"]')
     this.filterDropdown = page.locator('[data-testid="filter-dropdown"]')
   }
 
   async goto() {
-    await this.page.goto('/markets')
+    await this.page.goto('/products')
     await this.page.waitForLoadState('networkidle')
   }
 
-  async searchMarkets(query: string) {
+  async searchProducts(query: string) {
     await this.searchInput.fill(query)
-    await this.page.waitForResponse(resp => resp.url().includes('/api/markets/search'))
+    await this.page.waitForResponse(resp => resp.url().includes('/api/products/search'))
     await this.page.waitForLoadState('networkidle')
   }
 
-  async getMarketCount() {
-    return await this.marketCards.count()
+  async getProductCount() {
+    return await this.productCards.count()
   }
 
-  async clickMarket(index: number) {
-    await this.marketCards.nth(index).click()
+  async clickProduct(index: number) {
+    await this.productCards.nth(index).click()
   }
 
   async filterByStatus(status: string) {
@@ -198,32 +198,32 @@ export class MarketsPage {
 ### Example Test with Best Practices
 
 ```typescript
-// tests/e2e/markets/search.spec.ts
+// tests/e2e/products/search.spec.ts
 import { test, expect } from '@playwright/test'
-import { MarketsPage } from '../../pages/MarketsPage'
+import { ProductsPage } from '../../pages/ProductsPage'
 
-test.describe('Market Search', () => {
-  let marketsPage: MarketsPage
+test.describe('Product Search', () => {
+  let productsPage: ProductsPage
 
   test.beforeEach(async ({ page }) => {
-    marketsPage = new MarketsPage(page)
-    await marketsPage.goto()
+    productsPage = new ProductsPage(page)
+    await productsPage.goto()
   })
 
-  test('should search markets by keyword', async ({ page }) => {
+  test('should search products by keyword', async ({ page }) => {
     // Arrange
-    await expect(page).toHaveTitle(/Markets/)
+    await expect(page).toHaveTitle(/Products/)
 
     // Act
-    await marketsPage.searchMarkets('trump')
+    await productsPage.searchProducts('headphones')
 
     // Assert
-    const marketCount = await marketsPage.getMarketCount()
-    expect(marketCount).toBeGreaterThan(0)
+    const productCount = await productsPage.getProductCount()
+    expect(productCount).toBeGreaterThan(0)
 
     // Verify first result contains search term
-    const firstMarket = marketsPage.marketCards.first()
-    await expect(firstMarket).toContainText(/trump/i)
+    const firstProduct = productsPage.productCards.first()
+    await expect(firstProduct).toContainText(/headphones/i)
 
     // Take screenshot for verification
     await page.screenshot({ path: 'artifacts/search-results.png' })
@@ -231,26 +231,26 @@ test.describe('Market Search', () => {
 
   test('should handle no results gracefully', async ({ page }) => {
     // Act
-    await marketsPage.searchMarkets('xyznonexistentmarket123')
+    await productsPage.searchProducts('xyznonexistentproduct123')
 
     // Assert
     await expect(page.locator('[data-testid="no-results"]')).toBeVisible()
-    const marketCount = await marketsPage.getMarketCount()
-    expect(marketCount).toBe(0)
+    const productCount = await productsPage.getProductCount()
+    expect(productCount).toBe(0)
   })
 
   test('should clear search results', async ({ page }) => {
     // Arrange - perform search first
-    await marketsPage.searchMarkets('trump')
-    await expect(marketsPage.marketCards.first()).toBeVisible()
+    await productsPage.searchProducts('headphones')
+    await expect(productsPage.productCards.first()).toBeVisible()
 
     // Act - clear search
-    await marketsPage.searchInput.clear()
+    await productsPage.searchInput.clear()
     await page.waitForLoadState('networkidle')
 
-    // Assert - all markets shown again
-    const marketCount = await marketsPage.getMarketCount()
-    expect(marketCount).toBeGreaterThan(10) // Should show all markets
+    // Assert - all products shown again
+    const productCount = await productsPage.getProductCount()
+    expect(productCount).toBeGreaterThan(10) // Should show all products
   })
 })
 ```
@@ -324,23 +324,23 @@ export default defineConfig({
 ### Identifying Flaky Tests
 ```bash
 # Run test multiple times to check stability
-npx playwright test tests/markets/search.spec.ts --repeat-each=10
+npx playwright test tests/products/search.spec.ts --repeat-each=10
 
 # Run specific test with retries
-npx playwright test tests/markets/search.spec.ts --retries=3
+npx playwright test tests/products/search.spec.ts --retries=3
 ```
 
 ### Quarantine Pattern
 ```typescript
 // Mark flaky test for quarantine
-test('flaky: market search with complex query', async ({ page }) => {
+test('flaky: product search with complex query', async ({ page }) => {
   test.fixme(true, 'Test is flaky - Issue #123')
 
   // Test code here...
 })
 
 // Or use conditional skip
-test('market search with complex query', async ({ page }) => {
+test('product search with complex query', async ({ page }) => {
   test.skip(process.env.CI, 'Test is flaky in CI - Issue #123')
 
   // Test code here...
@@ -364,7 +364,7 @@ await page.locator('[data-testid="button"]').click() // Built-in auto-wait
 await page.waitForTimeout(5000)
 
 // ✅ STABLE: Wait for specific condition
-await page.waitForResponse(resp => resp.url().includes('/api/markets'))
+await page.waitForResponse(resp => resp.url().includes('/api/products'))
 ```
 
 **3. Animation Timing**
@@ -446,7 +446,7 @@ jobs:
       - name: Run E2E tests
         run: npx playwright test
         env:
-          BASE_URL: https://staging.pmx.trade
+          BASE_URL: https://staging.pmx.order
 
       - name: Upload artifacts
         if: always()
@@ -483,18 +483,18 @@ jobs:
 
 ## Test Results by Suite
 
-### Markets - Browse & Search
-- ✅ user can browse markets (2.3s)
+### Products - Browse & Search
+- ✅ user can browse products (2.3s)
 - ✅ semantic search returns relevant results (1.8s)
 - ✅ search handles no results (1.2s)
 - ❌ search with special characters (0.9s)
 
-### Wallet - Connection
+### Account - Connection
 - ✅ user can connect MetaMask (3.1s)
 - ⚠️  user can connect Phantom (2.8s) - FLAKY
-- ✅ user can disconnect wallet (1.5s)
+- ✅ user can disconnect account (1.5s)
 
-### Trading - Core Flows
+### Purchasing - Core Flows
 - ✅ user can place buy order (5.2s)
 - ❌ user can place sell order (4.8s)
 - ✅ insufficient balance shows error (1.9s)
@@ -502,14 +502,14 @@ jobs:
 ## Failed Tests
 
 ### 1. search with special characters
-**File:** `tests/e2e/markets/search.spec.ts:45`
+**File:** `tests/e2e/products/search.spec.ts:45`
 **Error:** Expected element to be visible, but was not found
 **Screenshot:** artifacts/search-special-chars-failed.png
 **Trace:** artifacts/trace-123.zip
 
 **Steps to Reproduce:**
-1. Navigate to /markets
-2. Enter search query with special chars: "trump & biden"
+1. Navigate to /products
+2. Enter search query with special chars: "headphones & cables"
 3. Verify results
 
 **Recommended Fix:** Escape special characters in search query
@@ -517,8 +517,8 @@ jobs:
 ---
 
 ### 2. user can place sell order
-**File:** `tests/e2e/trading/sell.spec.ts:28`
-**Error:** Timeout waiting for API response /api/trade
+**File:** `tests/e2e/purchasing/sell.spec.ts:28`
+**Error:** Timeout waiting for API response /api/order
 **Video:** artifacts/videos/sell-order-failed.webm
 
 **Possible Causes:**

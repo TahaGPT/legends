@@ -1,82 +1,34 @@
 #!/usr/bin/env node
 /**
- * Stop Hook (Session End) - Persist learnings when session ends
+ * SessionEnd hook - record where this session left off.
  *
- * Cross-platform (Windows, macOS, Linux)
+ * Writes <claude dir>/sessions/<date>-<id8>.tmp with the project path, branch,
+ * number of user messages, the last request, uncommitted files, and a
+ * "Learning review: suggested" line for long sessions. The next SessionStart in
+ * the same project surfaces it to Claude. A "Notes for Next Session" section is
+ * preserved when the record is updated, so you can add notes by hand.
  *
- * Runs when Claude session ends. Creates/updates session log file
- * with timestamp for continuity tracking.
+ * Learning evaluation used to be a separate SessionEnd hook, but hooks for the
+ * same event run in parallel and both wrote the same file, so it runs here.
+ *
+ * Cross-platform (Windows, macOS, Linux). Never blocks: errors exit 0.
  */
 
-const path = require('path');
-const fs = require('fs');
-const {
-  getSessionsDir,
-  getDateString,
-  getTimeString,
-  ensureDir,
-  readFile,
-  writeFile,
-  replaceInFile,
-  log
-} = require('../lib/utils');
+const { readStdinJsonSync, log } = require('../lib/utils');
+const { writeSessionRecord } = require('../lib/session-store');
+const { loadConfig } = require('./evaluate-session');
 
-async function main() {
-  const sessionsDir = getSessionsDir();
-  const today = getDateString();
-  const sessionFile = path.join(sessionsDir, `${today}-session.tmp`);
-
-  ensureDir(sessionsDir);
-
-  const currentTime = getTimeString();
-
-  // If session file exists for today, update the end time
-  if (fs.existsSync(sessionFile)) {
-    const success = replaceInFile(
-      sessionFile,
-      /\*\*Last Updated:\*\*.*/,
-      `**Last Updated:** ${currentTime}`
-    );
-
-    if (success) {
-      log(`[SessionEnd] Updated session file: ${sessionFile}`);
-    }
-  } else {
-    // Create new session file with template
-    const template = `# Session: ${today}
-**Date:** ${today}
-**Started:** ${currentTime}
-**Last Updated:** ${currentTime}
-
----
-
-## Current State
-
-[Session context goes here]
-
-### Completed
-- [ ]
-
-### In Progress
-- [ ]
-
-### Notes for Next Session
--
-
-### Context to Load
-\`\`\`
-[relevant files]
-\`\`\`
-`;
-
-    writeFile(sessionFile, template);
-    log(`[SessionEnd] Created session file: ${sessionFile}`);
-  }
-
-  process.exit(0);
+function main() {
+  const input = readStdinJsonSync();
+  const { minSessionLength } = loadConfig();
+  const { file, prompts, learningSuggested } = writeSessionRecord(input, { minSessionLength });
+  // SessionEnd output is never shown to Claude; stderr is for the user's logs only.
+  log(`[SessionEnd] Saved session record (${prompts} messages${learningSuggested ? ', learning review suggested' : ''}): ${file}`);
 }
 
-main().catch(err => {
-  console.error('[SessionEnd] Error:', err.message);
-  process.exit(0);
-});
+try {
+  main();
+} catch (err) {
+  log(`[SessionEnd] Error: ${err.message}`);
+}
+process.exit(0);

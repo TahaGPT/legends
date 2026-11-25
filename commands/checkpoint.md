@@ -1,3 +1,8 @@
+---
+description: Create, verify, or list named workflow checkpoints (verified state saved as a git commit or stash) to compare against or roll back to.
+argument-hint: "[create|verify|list] [name]"
+---
+
 # Checkpoint Command
 
 Create or verify a checkpoint in your workflow.

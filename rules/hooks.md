@@ -4,23 +4,33 @@
 
 - **PreToolUse**: Before tool execution (validation, parameter modification)
 - **PostToolUse**: After tool execution (auto-format, checks)
-- **Stop**: When session ends (final verification)
+- **Stop**: When Claude finishes a turn (final checks)
+- **SessionStart / SessionEnd**: When a session begins or ends
+- **PreCompact**: Before context compaction
 
-## Current Hooks (in ~/.claude/settings.json)
+What reaches Claude: blocking hooks (exit code 2) show stderr to Claude. Non-blocking messages must be JSON on stdout (`hookSpecificOutput.additionalContext` for Claude, `systemMessage` for the user), or plain stdout for SessionStart. Claude never sees stderr from a hook that exits 0. Hooks for the same event run in parallel. Helpers: `emitHookOutput()` and `readStdinJsonSync()` in `scripts/lib/utils.js`.
 
-### PreToolUse
-- **tmux reminder**: Suggests tmux for long-running commands (npm, pnpm, yarn, cargo, etc.)
-- **git push review**: Opens Zed for review before push
-- **doc blocker**: Blocks creation of unnecessary .md/.txt files
+## LEGENDS Hooks
 
-### PostToolUse
-- **PR creation**: Logs PR URL and GitHub Actions status
-- **Prettier**: Auto-formats JS/TS files after edit
-- **TypeScript check**: Runs tsc after editing .ts/.tsx files
-- **console.log warning**: Warns about console.log in edited files
+**Always on:**
+- **Session memory**: SessionEnd writes a record per session to `~/.claude/sessions/` (project, branch, last request, uncommitted files, your notes). The next SessionStart in the same project tells Claude where you left off. Records from other projects are never shown.
+- **Continuous learning**: long sessions are marked for review, and the next session suggests `/learn`
+- **Compaction log**: PreCompact appends to `~/.claude/sessions/compaction-log.txt`
+- **Strategic compact**: suggests `/compact` at logical intervals during long edit sessions
+- **PR hint**: after `gh pr create`, prints the PR URL and a review command
 
-### Stop
-- **console.log audit**: Checks all modified files for console.log before session ends
+**Opt-in** via the `LEGENDS_HOOKS` environment variable (comma-separated, or `all`), e.g. `"env": { "LEGENDS_HOOKS": "tmux,console-log" }` in `~/.claude/settings.json`:
+
+| Flag | Event | Behavior |
+|------|-------|----------|
+| `tmux` | PreToolUse (Bash) | Blocks dev servers outside tmux; reminds to use tmux for long commands |
+| `push-reminder` | PreToolUse (Bash) | Reminder to review the diff before `git push` |
+| `block-md` | PreToolUse (Write) | Blocks new `.md`/`.txt` files other than README/CLAUDE/AGENTS/CONTRIBUTING |
+| `prettier` | PostToolUse (Edit/Write) | Formats edited JS/TS files with the project's Prettier |
+| `typecheck` | PostToolUse (Edit/Write) | Runs `tsc --noEmit` and shows errors for the edited file |
+| `console-log` | PostToolUse + Stop | Warns about `console.log` in edited and modified files |
+
+Implementation: `scripts/hooks/optional-hooks.js` (opt-in), `session-start.js`, `session-end.js`, `pre-compact.js`, and `suggest-compact.js`. All hooks honor `CLAUDE_CONFIG_DIR`. Hook matchers are tool-name patterns (`Bash`, `Edit|Write|MultiEdit`); blocking hooks exit with code 2.
 
 ## Auto-Accept Permissions
 

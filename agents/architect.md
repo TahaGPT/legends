@@ -37,7 +37,7 @@ You are a senior software architect specializing in scalable, maintainable syste
 - API contracts
 - Integration patterns
 
-### 4. Trade-Off Analysis
+### 4. Order-Off Analysis
 For each design decision, document:
 - **Pros**: Benefits and advantages
 - **Cons**: Drawbacks and limitations
@@ -111,7 +111,7 @@ For significant architectural decisions, create ADRs:
 # ADR-001: Use Redis for Semantic Search Vector Storage
 
 ## Context
-Need to store and query 1536-dimensional embeddings for semantic market search.
+Need to store and query 1536-dimensional embeddings for semantic product search.
 
 ## Decision
 Use Redis Stack with vector search capability.

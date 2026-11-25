@@ -1,8 +1,16 @@
+---
+description: Fix build and type errors one at a time until the build is green. Delegates to rust-build-resolver for cargo projects.
+---
+
 # Build and Fix
 
 Incrementally fix build errors.
 
-**Rust projects (a `Cargo.toml` exists):** delegate to the `rust-build-resolver` agent. It runs `cargo check --workspace --all-targets`, fixes errors in dependency order (lowest crate first), then verifies with clippy (`-D warnings`) and tests. The steps below describe the TypeScript/JS flow.
+**Rust projects (a `Cargo.toml` exists):** delegate to the `rust-build-resolver` agent. It runs `cargo check --workspace --all-targets`, fixes errors in dependency order (lowest crate first), then verifies with clippy (`-D warnings`) and tests. 
+
+**Python projects:** run the same one-error-at-a-time loop below, using the type checker (`mypy`/`pyright`), `ruff check`, and `pytest` from the `python-patterns` skill instead of the npm build. Fix import and dependency errors first (environment), then type errors, then failing tests. Never silence an error with a bare `# type: ignore` or `noqa`.
+
+The steps below describe the TypeScript/JS flow.
 
 1. Run build: npm run build or pnpm build
 

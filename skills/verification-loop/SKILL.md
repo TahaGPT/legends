@@ -17,6 +17,8 @@ Invoke this skill:
 
 ## Verification Phases
 
+> **Python projects (`pyproject.toml`, `setup.py`, or `requirements*.txt`):** format = `ruff format --check .`, lint = `ruff check .`, types = `mypy .` or `pyright` (whichever the project configures), tests = `pytest` with `--cov` for coverage, security = `pip-audit` (+ `bandit` if configured), debug-statement audit = `print()`/`breakpoint()`/bare `except:` instead of console.log. Prefix commands with `uv run` / `poetry run` / `pdm run` to match the project's lockfile. See the `python-patterns` skill.
+>
 > **Rust projects (a `Cargo.toml` exists):** run each phase with cargo instead of npm.
 > Build + types: `cargo check --workspace --all-targets --all-features`.
 > Lint: `cargo fmt --all -- --check` and `cargo clippy --workspace --all-targets --all-features -- -D warnings`.

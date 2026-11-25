@@ -1,0 +1,53 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Plugin structure and manifests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Validate JSON files
+        run: |
+          for f in .claude-plugin/plugin.json .claude-plugin/marketplace.json hooks/hooks.json mcp-configs/mcp-servers.json examples/statusline.json; do
+            node -e "JSON.parse(require('fs').readFileSync('$f','utf8'))" && echo "ok  $f"
+          done
+      - name: Structure tests
+        run: node tests/plugin/structure.test.js
+
+  test:
+    name: Test suite (${{ matrix.os }}, Node ${{ matrix.node }})
+    needs: validate
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: [22]
+        include:
+          - os: ubuntu-latest
+            node: 24
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Run all tests
+        run: node tests/run-all.js

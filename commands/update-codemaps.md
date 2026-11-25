@@ -1,3 +1,7 @@
+---
+description: Regenerate the architecture codemaps (overall, backend, frontend, data) from the current source; asks before large rewrites.
+---
+
 # Update Codemaps
 
 Analyze the codebase structure and update architecture documentation:

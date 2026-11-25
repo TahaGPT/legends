@@ -2,7 +2,7 @@
 name: build-error-resolver
 description: Build and TypeScript error resolution specialist. Use PROACTIVELY when build fails or type errors occur. Fixes build/type errors only with minimal diffs, no architectural edits. Focuses on getting the build green quickly.
 tools: Read, Write, Edit, Bash, Grep, Glob
-model: opus
+model: sonnet
 ---
 
 # Build Error Resolver
@@ -362,19 +362,19 @@ function processData(data: Array<{ value: number }>) {
 ## Errors Fixed
 
 ### 1. [Error Category - e.g., Type Inference]
-**Location:** `src/components/MarketCard.tsx:45`
+**Location:** `src/components/ProductCard.tsx:45`
 **Error Message:**
 ```
-Parameter 'market' implicitly has an 'any' type.
+Parameter 'product' implicitly has an 'any' type.
 ```
 
 **Root Cause:** Missing type annotation for function parameter
 
 **Fix Applied:**
 ```diff
-- function formatMarket(market) {
-+ function formatMarket(market: Market) {
-    return market.name
+- function formatProduct(product) {
++ function formatProduct(product: Product) {
+    return product.name
   }
 ```
 

@@ -1,16 +1,19 @@
 {
   "mcpServers": {
     "github": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "YOUR_GITHUB_PAT_HERE"
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "Bearer YOUR_GITHUB_PAT_HERE"
       },
-      "description": "GitHub operations - PRs, issues, repos"
+      "description": "GitHub's official remote MCP server: PRs, issues, repos, Actions"
     },
     "firecrawl": {
       "command": "npx",
-      "args": ["-y", "firecrawl-mcp"],
+      "args": [
+        "-y",
+        "firecrawl-mcp"
+      ],
       "env": {
         "FIRECRAWL_API_KEY": "YOUR_FIRECRAWL_KEY_HERE"
       },
@@ -18,17 +21,27 @@
     },
     "supabase": {
       "command": "npx",
-      "args": ["-y", "@supabase/mcp-server-supabase@latest", "--project-ref=YOUR_PROJECT_REF"],
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        "--project-ref=YOUR_PROJECT_REF"
+      ],
       "description": "Supabase database operations"
     },
     "memory": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ],
       "description": "Persistent memory across sessions"
     },
     "sequential-thinking": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
       "description": "Chain-of-thought reasoning"
     },
     "vercel": {
@@ -38,7 +51,10 @@
     },
     "railway": {
       "command": "npx",
-      "args": ["-y", "@railway/mcp-server"],
+      "args": [
+        "-y",
+        "@railway/mcp-server"
+      ],
       "description": "Railway deployments"
     },
     "cloudflare-docs": {
@@ -68,24 +84,35 @@
     },
     "context7": {
       "command": "npx",
-      "args": ["-y", "@context7/mcp-server"],
-      "description": "Live documentation lookup"
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ],
+      "description": "Up-to-date library documentation lookup"
     },
     "magic": {
       "command": "npx",
-      "args": ["-y", "@magicuidesign/mcp@latest"],
+      "args": [
+        "-y",
+        "@magicuidesign/mcp@latest"
+      ],
       "description": "Magic UI components"
     },
     "filesystem": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/your/projects"],
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/path/to/your/projects"
+      ],
       "description": "Filesystem operations (set your path)"
     }
   },
   "_comments": {
-    "usage": "Copy the servers you need to your ~/.claude.json mcpServers section",
-    "env_vars": "Replace YOUR_*_HERE placeholders with actual values",
-    "disabling": "Use disabledMcpServers array in project config to disable per-project",
-    "context_warning": "Keep under 10 MCPs enabled to preserve context window"
+    "usage": "A catalog, not a default: copy only the servers you need. Easiest is the CLI, e.g. `claude mcp add --transport http github https://api.githubcopilot.com/mcp/`, or copy entries into the mcpServers section of ~/.claude.json (user) or .mcp.json (project, shareable).",
+    "starter_set": "github, context7, sequential-thinking, plus filesystem if you work outside the project directory. Add database/cloud servers (supabase, clickhouse, vercel, railway, cloudflare-*) per project.",
+    "env_vars": "Replace YOUR_*_HERE placeholders. Never commit real tokens; in .mcp.json use ${ENV_VAR} expansion instead.",
+    "disabling": "Disable per project with /mcp or the disabledMcpjsonServers setting.",
+    "context_warning": "Each enabled server's tools cost context. Keep the enabled set small (under about 10)."
   }
 }

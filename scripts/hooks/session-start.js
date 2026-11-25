@@ -1,61 +1,66 @@
 #!/usr/bin/env node
 /**
- * SessionStart Hook - Load previous context on new session
+ * SessionStart hook - tell Claude where the last session in this project left off.
  *
- * Cross-platform (Windows, macOS, Linux)
+ * Plain stdout from a SessionStart hook is added to Claude's context, so this
+ * prints a short summary of the newest session record for the same project
+ * (written by session-end.js): date, branch, last request, uncommitted files,
+ * your notes, and whether a learning review was suggested. It stays silent when
+ * there is nothing useful to say, and skips the summary after /compact (the
+ * compaction summary already carries that context).
  *
- * Runs when a new Claude session starts. Checks for recent session
- * files and notifies Claude of available context to load.
+ * In JS/TS projects with no package-manager preference it adds a one-line hint
+ * about /setup-pm.
+ *
+ * Cross-platform (Windows, macOS, Linux). Never blocks: errors exit 0.
  */
 
+const fs = require('fs');
 const path = require('path');
-const {
-  getSessionsDir,
-  getLearnedSkillsDir,
-  findFiles,
-  ensureDir,
-  log
-} = require('../lib/utils');
-const { getPackageManager, getSelectionPrompt } = require('../lib/package-manager');
+const { getLearnedSkillsDir, findFiles, readStdinJsonSync, log } = require('../lib/utils');
+const { latestRecordForProject } = require('../lib/session-store');
+const { getPackageManager } = require('../lib/package-manager');
 
-async function main() {
-  const sessionsDir = getSessionsDir();
-  const learnedDir = getLearnedSkillsDir();
-
-  // Ensure directories exist
-  ensureDir(sessionsDir);
-  ensureDir(learnedDir);
-
-  // Check for recent session files (last 7 days)
-  const recentSessions = findFiles(sessionsDir, '*.tmp', { maxAge: 7 });
-
-  if (recentSessions.length > 0) {
-    const latest = recentSessions[0];
-    log(`[SessionStart] Found ${recentSessions.length} recent session(s)`);
-    log(`[SessionStart] Latest: ${latest.path}`);
+function previousSessionLines(cwd, sessionId) {
+  const rec = latestRecordForProject(cwd, { excludeSessionId: sessionId });
+  if (!rec) return [];
+  const lines = [`[LEGENDS] Previous session in this project: ${rec.date}${rec.branch ? ` on branch ${rec.branch}` : ''} (${rec.messages || 0} user messages).`];
+  if (rec.lastRequest) lines.push(`  Last request: ${rec.lastRequest}`);
+  if (rec.changed.length) {
+    const shown = rec.changed.slice(0, 5).join(', ');
+    lines.push(`  Uncommitted files then: ${shown}${rec.changed.length > 5 ? ` (+${rec.changed.length - 5} more)` : ''}`);
   }
-
-  // Check for learned skills
-  const learnedSkills = findFiles(learnedDir, '*.md');
-
-  if (learnedSkills.length > 0) {
-    log(`[SessionStart] ${learnedSkills.length} learned skill(s) available in ${learnedDir}`);
-  }
-
-  // Detect and report package manager
-  const pm = getPackageManager();
-  log(`[SessionStart] Package manager: ${pm.name} (${pm.source})`);
-
-  // If package manager was detected via fallback, show selection prompt
-  if (pm.source === 'fallback' || pm.source === 'default') {
-    log('[SessionStart] No package manager preference found.');
-    log(getSelectionPrompt());
-  }
-
-  process.exit(0);
+  if (rec.notes) lines.push(`  Notes: ${rec.notes.split('\n').slice(0, 5).join(' | ')}`);
+  if (rec.learning) lines.push('  That session was long and not yet reviewed: consider /learn to extract reusable patterns.');
+  lines.push(`  Full record: ${rec.file}`);
+  return lines;
 }
 
-main().catch(err => {
-  console.error('[SessionStart] Error:', err.message);
-  process.exit(0); // Don't block on errors
-});
+function main() {
+  const input = readStdinJsonSync();
+  const cwd = input.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd();
+  const lines = [];
+
+  if (input.source !== 'compact') lines.push(...previousSessionLines(cwd, input.session_id));
+
+  const learned = findFiles(getLearnedSkillsDir(), '*.md');
+  if (learned.length && input.source !== 'compact') {
+    lines.push(`[LEGENDS] ${learned.length} learned skill(s) in ${getLearnedSkillsDir()}`);
+  }
+
+  if (fs.existsSync(path.join(cwd, 'package.json'))) {
+    const pm = getPackageManager({ projectDir: cwd });
+    if (pm.source === 'fallback' || pm.source === 'default') {
+      lines.push(`[LEGENDS] No package manager preference set; using ${pm.name}. Run /setup-pm to choose one.`);
+    }
+  }
+
+  if (lines.length) process.stdout.write(lines.join('\n') + '\n');
+}
+
+try {
+  main();
+} catch (err) {
+  log(`[SessionStart] Error: ${err.message}`);
+}
+process.exit(0);

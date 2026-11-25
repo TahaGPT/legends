@@ -1,5 +1,7 @@
 # Code Review Context
 
+> Load for a review-focused session: `claude --append-system-prompt "$(cat contexts/review.md)"` (or paste it into a project CLAUDE.md).
+
 Mode: PR review, code analysis
 Focus: Quality, security, maintainability
 
@@ -19,4 +21,5 @@ Focus: Quality, security, maintainability
 - [ ] Test coverage
 
 ## Output Format
-Group findings by file, severity first
+Severity first (CRITICAL > HIGH > MEDIUM > LOW), then by file, with `file:line` for each finding.
+For a full review, delegate to the code-reviewer agent (and security-reviewer for sensitive changes) or run `/code-review`.

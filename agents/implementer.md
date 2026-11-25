@@ -27,7 +27,10 @@ If there is no plan for a non-trivial change, stop and ask for one (`/plan`). Do
 1. Read `CLAUDE.md` and any project skill.
 2. Detect the stack and load the matching knowledge:
    - `Cargo.toml` → `rust-patterns` skill
+   - `pyproject.toml` / `setup.py` / `requirements*.txt` → `python-patterns` skill
+   - Any code that calls an LLM API, builds prompts, or defines model tools → `llm-integration` skill
    - `package.json` with React/Next → `frontend-patterns`; server code → `backend-patterns`
+   - New service, endpoint, background job, or external integration → `observability` skill (logs, metrics, traces, health checks)
    - Always: `coding-standards`, `tdd-workflow`; `security-review` when touching auth, input handling, secrets, payments, or LLM calls
 3. Find the project's exact commands (build, test, lint, format) from manifests, CI config, or `CLAUDE.md`.
 4. Run the test suite once **before** changing anything to get a baseline. If it already fails, record which tests fail. You are not responsible for them, and you must not hide them.

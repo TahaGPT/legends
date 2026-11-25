@@ -1,55 +1,35 @@
 # Common Patterns
 
-## API Response Format
+Defaults to reach for when the project has no established convention. If it has one, follow it. Code-level examples live in the `backend-patterns`, `frontend-patterns`, `python-patterns`, and `rust-patterns` skills, and API design in the **api-designer** agent.
 
-```typescript
-interface ApiResponse<T> {
-  success: boolean
-  data?: T
-  error?: string
-  meta?: {
-    total: number
-    page: number
-    limit: number
-  }
-}
+## Consistent API Responses
+
+Pick one response shape for the whole API and stick to it, for example:
+
+```json
+{ "data": { }, "error": null, "meta": { "total": 120, "page": 1, "limit": 20 } }
+{ "data": null, "error": { "code": "not_found", "message": "Product not found" } }
 ```
 
-## Custom Hooks Pattern
+- Machine-readable error `code` and human-readable `message`.
+- Correct HTTP status codes; never 200 with an error body.
+- Pagination metadata on list endpoints.
 
-```typescript
-export function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value)
+## Repository / Data-Access Layer
 
-  useEffect(() => {
-    const handler = setTimeout(() => setDebouncedValue(value), delay)
-    return () => clearTimeout(handler)
-  }, [value, delay])
+Keep storage behind a small interface (`find_all(filters)`, `find_by_id`, `create`, `update`, `delete`) so business logic doesn't depend on the database client, and tests can use an in-memory implementation.
 
-  return debouncedValue
-}
-```
+## Thin Handlers, Testable Core
 
-## Repository Pattern
+Handlers, controllers, and CLI entry points parse input, call a service function, and format output. Business rules live in plain functions or services that can be tested without a server.
 
-```typescript
-interface Repository<T> {
-  findAll(filters?: Filters): Promise<T[]>
-  findById(id: string): Promise<T | null>
-  create(data: CreateDto): Promise<T>
-  update(id: string, data: UpdateDto): Promise<T>
-  delete(id: string): Promise<void>
-}
-```
+## Configuration
 
-## Skeleton Projects
+Read configuration once at startup from the environment, validate it, and pass it down. Don't scatter environment lookups through the code.
 
-When implementing new functionality:
-1. Search for battle-tested skeleton projects
-2. Use parallel agents to evaluate options:
-   - Security assessment
-   - Extensibility analysis
-   - Relevance scoring
-   - Implementation planning
-3. Clone best match as foundation
-4. Iterate within proven structure
+## Start From Proven Foundations
+
+For new projects or major components:
+1. Look for well-maintained templates, starters, or libraries before writing from scratch.
+2. Evaluate the candidates for security, maintenance activity, license, and fit. Parallel agents work well for this.
+3. Start from the best match and adapt it, rather than reinventing the scaffolding.
