@@ -416,7 +416,7 @@ node tests/plugin/structure.test.js
 
 `tests/plugin/structure.test.js` validates the plugin itself: frontmatter on every agent, skill, and command; valid tool and model names; reviewer agents staying read-only; every agent and skill referenced by a command existing; manifests; and hook script paths. Run it after adding or renaming any agent, skill, or command.
 
-CI (`.github/workflows/test.yml`) runs the structure checks and then the full suite on every pull request and push to `main`, on Linux, macOS, and Windows (Node 22, plus Node 20 on Linux). The suite needs no `npm install`; it uses only Node's built-in modules.
+CI (`.github/workflows/test.yml`) runs the structure checks and then the full suite on every pull request and push to `main`, on Linux, macOS, and Windows (Node 22, plus Node 24 on Linux). The suite needs no `npm install`; it uses only Node's built-in modules.
 
 ---
 
